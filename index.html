@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Face Tracking - Palyaço Filtresi v1.0.2</title>
+  <title>Face Tracking - Palyaço Filtresi v1.0.3</title>
   
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
@@ -14,7 +14,7 @@
       position: absolute;
       top: 10px;
       right: 10px;
-      background-color: rgba(40, 167, 69, 0.8); /* Çalıştığını umarak yeşil yaptık! */
+      background-color: rgba(255, 165, 0, 0.8); /* Turuncu renk */
       color: #fff;
       padding: 5px 10px;
       border-radius: 5px;
@@ -30,7 +30,7 @@
 
   <div id="version-display">Versiyon: </div>
 
-  <a-scene mindar-face embedded color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+  <a-scene mindar-face color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
     
     <a-camera active="false" position="0 0 0" look-controls="enabled: false"></a-camera>
 
@@ -53,36 +53,12 @@
   </a-scene>
 
   <script>
-    const currentVersion = 'v1.0.2';
-
-    // Ekrandaki versiyon yazısını güncelle
+    const currentVersion = 'v1.0.3';
     window.addEventListener('load', () => {
       const versionElement = document.getElementById('version-display');
       if (versionElement) {
         versionElement.textContent = `Sürüm: ${currentVersion}`;
       }
-    });
-
-    // KRİTİK DÜZELTME: Sistemi Kandırma Operasyonu
-    document.addEventListener("DOMContentLoaded", function() {
-      const sceneEl = document.querySelector('a-scene');
-      
-      // AR sahnesi yüklendiğinde...
-      sceneEl.addEventListener("loaded", () => {
-        
-        // 0.5 saniye sonra sahte bir ekran çevirme (resize) komutu yolla
-        setTimeout(() => {
-          window.dispatchEvent(new Event('resize'));
-          console.log("1. Sahte ekran yenilemesi gönderildi.");
-        }, 500);
-
-        // Garanti olsun diye 1.5 saniye sonra bir tane daha yolla
-        setTimeout(() => {
-          window.dispatchEvent(new Event('resize'));
-          console.log("2. Sahte ekran yenilemesi gönderildi.");
-        }, 1500);
-
-      });
     });
   </script>
 
