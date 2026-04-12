@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Tracking v1.0.7 - Dinamik Sistem</title>
+  <title>Face Tracking v1.0.8 PRO</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
@@ -12,29 +12,33 @@
     body { margin:0; overflow:hidden; background:#000; }
 
     #ui {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 999;
-      font-family: monospace;
-      color: white;
-      background: rgba(0,0,0,0.6);
-      padding: 10px;
-      border-radius: 8px;
+      position:absolute;
+      top:10px;
+      left:10px;
+      z-index:999;
+      background:rgba(0,0,0,0.6);
+      color:#fff;
+      padding:10px;
+      border-radius:10px;
+      font-family:monospace;
     }
 
     button {
-      margin: 2px;
-      padding: 5px;
-      cursor: pointer;
+      margin:3px;
+      padding:6px;
+      cursor:pointer;
+      border:none;
+      border-radius:5px;
     }
   </style>
 </head>
+
 <body>
 
 <div id="ui">
-  <div>Versiyon: v1.0.7</div>
-  <div id="info">Aktif Nokta: 0</div>
+  <div>Versiyon: v1.0.8 PRO</div>
+  <div id="info">Nokta: 0</div>
+  <div id="fps">FPS: -</div>
 
   <button onclick="setMode('minimal')">Minimal</button>
   <button onclick="setMode('medium')">Orta</button>
@@ -44,25 +48,35 @@
 
 <a-scene mindar-face vr-mode-ui="enabled:false">
   <a-camera active="false"></a-camera>
+
+  <!-- 🔥 ANA YÜZ ROOT -->
+  <a-entity id="faceRoot" mindar-face-target="anchorIndex: 1"></a-entity>
+
 </a-scene>
 
 <script>
 const scene = document.querySelector("a-scene");
+const faceRoot = document.querySelector("#faceRoot");
 const info = document.getElementById("info");
+const fpsText = document.getElementById("fps");
 
 let currentEntities = [];
+let lastTime = performance.now();
 
-// 🔥 Yüz grupları (MediaPipe landmark indexleri)
+// 🔥 SMOOTHING AYARI
+const SMOOTHING = 0.7;
+
+// 🔥 GRUPLAR
 const GROUPS = {
   nose: [1, 4, 10, 152],
-  leftEye: [33, 133, 159, 145],
-  rightEye: [263, 362, 386, 374],
-  mouth: [61, 291, 0, 17],
-  eyebrows: [70, 105, 334, 300],
-  faceEdge: [234, 454]
+  leftEye: [33,133,159,145],
+  rightEye: [263,362,386,374],
+  mouth: [61,291,0,17],
+  eyebrows: [70,105,334,300],
+  faceEdge: [234,454]
 };
 
-// 🔥 Modlar
+// 🔥 MODLAR
 const MODES = {
   minimal: [...GROUPS.nose],
 
@@ -81,22 +95,22 @@ const MODES = {
     ...GROUPS.faceEdge
   ],
 
-  extreme: Array.from({length: 120}, (_, i) => i) // ⚠️ performans testi
+  extreme: Array.from({length: 150}, (_, i) => i)
 };
 
-// 🔥 Temizle
+// 🔥 TEMİZLE
 function clearPoints() {
   currentEntities.forEach(e => scene.removeChild(e));
   currentEntities = [];
 }
 
-// 🔥 Nokta oluştur
+// 🔥 NOKTA OLUŞTUR
 function createPoint(index, color="#00FF00") {
   const entity = document.createElement("a-entity");
   entity.setAttribute("mindar-face-target", `anchorIndex: ${index}`);
 
   const sphere = document.createElement("a-sphere");
-  sphere.setAttribute("radius", "0.015");
+  sphere.setAttribute("radius", "0.012");
   sphere.setAttribute("color", color);
   sphere.setAttribute("opacity", "0.9");
 
@@ -106,19 +120,18 @@ function createPoint(index, color="#00FF00") {
   currentEntities.push(entity);
 }
 
-// 🔥 Performans kontrol
+// 🔥 PERFORMANS UYARI
 function performanceCheck(count) {
-  if (count > 80) {
-    alert("⚠️ Çok fazla nokta! Mobil cihazlarda kasma veya çökme olabilir.");
+  if (count > 100) {
+    alert("⚠️ Çok fazla nokta! Performans düşebilir.");
   }
 }
 
-// 🔥 Mod değiştir
+// 🔥 MOD DEĞİŞTİR
 function setMode(mode) {
   clearPoints();
 
   const points = MODES[mode];
-
   performanceCheck(points.length);
 
   points.forEach(i => {
@@ -132,10 +145,46 @@ function setMode(mode) {
     createPoint(i, color);
   });
 
-  info.textContent = "Aktif Nokta: " + points.length;
+  info.textContent = "Nokta: " + points.length;
 }
 
-// 🔥 başlangıç
+// 🔥 GELİŞMİŞ FACE TRACKING (PRO)
+AFRAME.registerComponent('pro-face-control', {
+  init: function () {
+    this.prevRot = new THREE.Euler();
+  },
+
+  tick: function () {
+    if (!faceRoot.object3D) return;
+
+    const rot = faceRoot.object3D.rotation;
+
+    // 🔥 SMOOTH ROTATION (titreşim azaltma)
+    this.prevRot.x = this.prevRot.x * SMOOTHING + rot.x * (1 - SMOOTHING);
+    this.prevRot.y = this.prevRot.y * SMOOTHING + rot.y * (1 - SMOOTHING);
+    this.prevRot.z = this.prevRot.z * SMOOTHING + rot.z * (1 - SMOOTHING);
+
+    // 🔥 GÜÇLENDİRME (pitch + roll fix)
+    this.el.object3D.rotation.set(
+      this.prevRot.x * 1.8,
+      this.prevRot.y * 1.2,
+      this.prevRot.z * 1.8
+    );
+
+    // 🔥 FPS HESAPLA
+    const now = performance.now();
+    const fps = Math.round(1000 / (now - lastTime));
+    lastTime = now;
+    fpsText.textContent = "FPS: " + fps;
+  }
+});
+
+// 🔥 AKTİF ET
+const controller = document.createElement("a-entity");
+controller.setAttribute("pro-face-control", "");
+scene.appendChild(controller);
+
+// 🔥 BAŞLANGIÇ
 window.addEventListener("load", () => {
   setMode("medium");
 });
