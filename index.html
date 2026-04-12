@@ -2,21 +2,36 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8" />
-  <title>Face Tracking v1.0.9 FIX</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Tracking v1.1.0 STABLE</title>
 
+  <!-- AFRAME -->
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+
+  <!-- MINDAR FACE -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
 
   <style>
     body { margin:0; overflow:hidden; background:#000; }
+
     #ui {
       position:absolute;
       top:10px;
       left:10px;
-      color:white;
+      color:#fff;
       background:rgba(0,0,0,0.6);
       padding:10px;
+      border-radius:10px;
       font-family:monospace;
+      z-index:999;
+    }
+
+    button {
+      margin:3px;
+      padding:6px;
+      border:none;
+      border-radius:5px;
+      cursor:pointer;
     }
   </style>
 </head>
@@ -24,45 +39,124 @@
 <body>
 
 <div id="ui">
-  v1.0.9 FIX - Gerçek Tracking
+  <div>Versiyon: v1.1.0</div>
+  <div id="info">Nokta: 0</div>
+
+  <button onclick="setMode('minimal')">Minimal</button>
+  <button onclick="setMode('medium')">Orta</button>
+  <button onclick="setMode('full')">Full</button>
+  <button onclick="setMode('extreme')">Extreme</button>
 </div>
 
 <a-scene 
-  mindar-face="autoStart: true;"
+  mindar-face="autoStart: true; mirror: false;"
   vr-mode-ui="enabled:false"
   device-orientation-permission-ui="enabled:false"
 >
 
   <a-camera active="false"></a-camera>
 
-  <!-- 🔥 TÜM NOKTALAR TEK ROOT ALTINDA -->
-  <a-entity id="faceRoot" mindar-face-target="anchorIndex: 1">
-
-    <!-- 🔥 BURAYA TÜM NOKTALAR -->
-    
-  </a-entity>
+  <!-- 🔥 TÜM SİSTEMİN ROOT'U -->
+  <a-entity id="faceRoot" mindar-face-target="anchorIndex: 1"></a-entity>
 
 </a-scene>
 
 <script>
 const faceRoot = document.querySelector("#faceRoot");
+const info = document.getElementById("info");
 
-// 🔥 TEST NOKTALARI (istediğin gibi artır)
-const points = [10,152,234,454,1,4,61,291,33,263];
+let currentPoints = [];
 
-points.forEach(i => {
+// 🔥 GRUPLAR
+const GROUPS = {
+  nose: [1,4,10,152],
+  leftEye: [33,133,159,145],
+  rightEye: [263,362,386,374],
+  mouth: [61,291,0,17],
+  eyebrows: [70,105,334,300],
+  faceEdge: [234,454]
+};
 
+// 🔥 MODLAR
+const MODES = {
+  minimal: [...GROUPS.nose],
+
+  medium: [
+    ...GROUPS.nose,
+    ...GROUPS.leftEye,
+    ...GROUPS.rightEye
+  ],
+
+  full: [
+    ...GROUPS.nose,
+    ...GROUPS.leftEye,
+    ...GROUPS.rightEye,
+    ...GROUPS.mouth,
+    ...GROUPS.eyebrows,
+    ...GROUPS.faceEdge
+  ],
+
+  extreme: Array.from({length: 120}, (_, i) => i)
+};
+
+// 🔥 TEMİZLE
+function clearPoints() {
+  currentPoints.forEach(p => faceRoot.removeChild(p));
+  currentPoints = [];
+}
+
+// 🔥 NOKTA OLUŞTUR
+function createPoint(index, color="#00FF00") {
   const entity = document.createElement("a-entity");
-  entity.setAttribute("mindar-face-target", `anchorIndex: ${i}`);
+  entity.setAttribute("mindar-face-target", `anchorIndex: ${index}`);
 
   const sphere = document.createElement("a-sphere");
   sphere.setAttribute("radius", "0.015");
-  sphere.setAttribute("color", "#00FF00");
+  sphere.setAttribute("color", color);
+  sphere.setAttribute("opacity", "0.9");
 
   entity.appendChild(sphere);
 
-  // 🔥 KRİTİK: scene değil faceRoot'a ekliyoruz
+  // 🔥 KRİTİK: faceRoot içine ekliyoruz
   faceRoot.appendChild(entity);
+
+  currentPoints.push(entity);
+}
+
+// 🔥 PERFORMANS UYARI
+function performanceCheck(count) {
+  if (count > 80) {
+    alert("⚠️ Çok fazla nokta! Mobilde kasma olabilir.");
+  }
+}
+
+// 🔥 MOD DEĞİŞTİR
+function setMode(mode) {
+
+  clearPoints();
+
+  const points = MODES[mode];
+
+  performanceCheck(points.length);
+
+  points.forEach(i => {
+
+    let color = "#00FF00";
+
+    if (GROUPS.leftEye.includes(i)) color = "#00FFFF";
+    if (GROUPS.rightEye.includes(i)) color = "#FF00FF";
+    if (GROUPS.mouth.includes(i)) color = "#FFFF00";
+    if (GROUPS.nose.includes(i)) color = "#FF0000";
+
+    createPoint(i, color);
+  });
+
+  info.textContent = "Nokta: " + points.length;
+}
+
+// 🔥 BAŞLANGIÇ
+window.addEventListener("load", () => {
+  setMode("medium");
 });
 </script>
 
