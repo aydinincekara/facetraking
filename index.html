@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Tracking v2.0 | Dinamik Tel Kafes (Mesh)</title>
+
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
+
+  <style>
+    body { margin:0; overflow:hidden; background:#000; }
+    #ui {
+      position:absolute; top:10px; left:10px; color:#fff;
+      background:rgba(0,0,0,0.8); padding:15px; border-radius:10px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      z-index:999; box-shadow: 0 4px 15px rgba(0,255,255,0.3);
+      border: 1px solid #0ea5e9;
+    }
+    .info-panel { margin-bottom: 5px; font-weight: bold; color: #0ea5e9; }
+    #info { color: #fff; font-size: 13px; margin-top: 5px; }
+  </style>
+
+  <script>
+    // 🔥 EĞİTİMİN KALBİ: KENDİ BİLEŞENİMİZİ (CUSTOM COMPONENT) YAZIYORUZ
+    // Bu bileşen, hareket eden iki "mindar-face-target" nesnesinin arasına dinamik bir lastik gibi çizgi gerer.
+    AFRAME.registerComponent('dynamic-line', {
+      schema: {
+        target1: {type: 'selector'}, // 1. Noktanın ID'si
+        target2: {type: 'selector'}, // 2. Noktanın ID'si
+        color: {default: '#0ea5e9'}  // Çizgi rengi (Siberpunk Mavi)
+      },
+      
+      // Saniyede 60 kez çalışan döngü (Tick)
+      tick: function () {
+        // Eğer noktalar HTML'de henüz oluşmadıysa işlemi durdur
+        if (!this.data.target1 || !this.data.target2) return;
+
+        // İki noktanın anlık 3D pozisyonlarını (X, Y, Z) al
+        const pos1 = this.data.target1.object3D.position;
+        const pos2 = this.data.target2.object3D.position;
+
+        // A-Frame'in 'line' özelliğini anlık pozisyonlarla güncelle
+        this.el.setAttribute('line', 'start', pos1);
+        this.el.setAttribute('line', 'end', pos2);
+        this.el.setAttribute('line', 'color', this.data.color);
+      }
+    });
+  </script>
+</head>
+
+<body>
+
+<div id="ui">
+  <div class="info-panel">MODÜL 1: Tel Kafes (Wireframe)</div>
+  <div id="info">Cyber-Maske Yükleniyor...</div>
+</div>
+
+<a-scene 
+  id="main-scene"
+  mindar-face="autoStart: true; mirror: false;"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+>
+  <a-camera active="false" position="0 0 0" look-controls="enabled: false"></a-camera>
+</a-scene>
+
+<script>
+const sceneEl = document.querySelector("#main-scene");
+const info = document.getElementById("info");
+
+// Hafızada tuttuğumuz objeler
+let currentAnchors = {}; 
+
+// 🔥 HANGİ NOKTALAR BİRBİRİNE BAĞLANACAK? (Mesh Haritası)
+// Format: [Nokta_A_Index, Nokta_B_Index]
+const MESH_CONNECTIONS = [
+  // Sol Göz Çerçevesi (Diamond)
+  [33, 133], [133, 159], [159, 145], [145, 33],
+  // Sağ Göz Çerçevesi (Diamond)
+  [263, 362], [362, 386], [386, 374], [374, 263],
+  // Burun Köprüsü
+  [10, 152], // Alından burun ucuna
+  // Gözleri Buruna Bağlayan Köprüler
+  [133, 10], [362, 10],
+  // Yanaklardan Çeneye (Siber Hatlar)
+  [33, 152], [263, 152]
+];
+
+// Ekranda nokta (anchor) yaratma fonksiyonu
+function createAnchor(index) {
+  if (currentAnchors[index]) return currentAnchors[index]; // Varsa tekrar yaratma
+
+  const entity = document.createElement("a-entity");
+  // Noktaya benzersiz bir ID veriyoruz (Örn: #point-33)
+  const id = `point-${index}`;
+  entity.setAttribute("id", id);
+  entity.setAttribute("mindar-face-target", `anchorIndex: ${index}`);
+
+  // Noktanın kendisini (küreyi) estetik olarak biraz daha küçültelim ki çizgiler öne çıksın
+  const sphere = document.createElement("a-sphere");
+  sphere.setAttribute("radius", "0.003"); 
+  sphere.setAttribute("color", "#fff");
+  
+  entity.appendChild(sphere);
+  sceneEl.appendChild(entity);
+
+  currentAnchors[index] = entity; // Hafızaya al
+  return id;
+}
+
+// Çizgi (Line) yaratma fonksiyonu
+function createLine(id1, id2) {
+  const lineEntity = document.createElement("a-entity");
+  // Yazdığımız özel bileşeni (dynamic-line) kullanıyoruz
+  lineEntity.setAttribute("dynamic-line", `target1: #${id1}; target2: #${id2}; color: #0ea5e9`);
+  sceneEl.appendChild(lineEntity);
+}
+
+// Sahne yüklendiğinde Mesh'i oluştur
+sceneEl.addEventListener('loaded', function () {
+    let lineCount = 0;
+
+    MESH_CONNECTIONS.forEach(pair => {
+      const indexA = pair[0];
+      const indexB = pair[1];
+
+      // Önce noktaları yarat ve ID'lerini al
+      const idA = createAnchor(indexA);
+      const idB = createAnchor(indexB);
+
+      // Sonra bu iki ID arasına dinamik çizgi çek
+      createLine(idA, idB);
+      lineCount++;
+    });
+
+    info.textContent = `Aktif Çizgi: ${lineCount} | Mesh Hazır!`;
+});
+</script>
+
+</body>
+</html>
