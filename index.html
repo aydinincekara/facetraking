@@ -3,12 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Tracking v1.1.0 STABLE</title>
+  <title>Face Tracking v1.2.0 | Stabil Çekirdek</title>
 
-  <!-- AFRAME -->
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 
-  <!-- MINDAR FACE -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
 
   <style>
@@ -19,45 +17,58 @@
       top:10px;
       left:10px;
       color:#fff;
-      background:rgba(0,0,0,0.6);
-      padding:10px;
+      background:rgba(0,0,0,0.8);
+      padding:15px;
       border-radius:10px;
-      font-family:monospace;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       z-index:999;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     }
+
+    .info-panel { margin-bottom: 10px; font-weight: bold; }
+    #info { color: #10b981; font-size: 14px; margin-top: 5px; }
 
     button {
       margin:3px;
-      padding:6px;
+      padding:8px 12px;
       border:none;
       border-radius:5px;
       cursor:pointer;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      transition: 0.2s;
     }
+    button:active { background: #1d4ed8; }
+    button.extreme { background: #dc2626; }
   </style>
 </head>
 
 <body>
 
 <div id="ui">
-  <div>Versiyon: v1.1.0</div>
+  <div class="info-panel">Versiyon: v1.2.0 (Stabil)</div>
   <div id="info">Nokta: 0</div>
 
-  <button onclick="setMode('minimal')">Minimal</button>
-  <button onclick="setMode('medium')">Orta</button>
-  <button onclick="setMode('full')">Full</button>
-  <button onclick="setMode('extreme')">Extreme</button>
+  <div style="margin-top: 10px;">
+      <button onclick="setMode('minimal')">Minimal</button>
+      <button onclick="setMode('medium')">Orta</button>
+      <button onclick="setMode('full')">Full</button>
+      <button class="extreme" onclick="setMode('extreme')">Extreme</button>
+  </div>
 </div>
 
 <a-scene 
   mindar-face="autoStart: true; mirror: false;"
-  vr-mode-ui="enabled:false"
-  device-orientation-permission-ui="enabled:false"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+  color-space="sRGB"
+  renderer="colorManagement: true"
 >
 
-  <a-camera active="false"></a-camera>
+  <a-camera active="false" position="0 0 0"></a-camera>
 
-  <!-- 🔥 TÜM SİSTEMİN ROOT'U -->
-  <a-entity id="faceRoot" mindar-face-target="anchorIndex: 1"></a-entity>
+  <a-entity id="faceRoot"></a-entity>
 
 </a-scene>
 
@@ -67,7 +78,7 @@ const info = document.getElementById("info");
 
 let currentPoints = [];
 
-// 🔥 GRUPLAR
+// 🔥 ANATOMİK GRUPLAR
 const GROUPS = {
   nose: [1,4,10,152],
   leftEye: [33,133,159,145],
@@ -96,65 +107,66 @@ const MODES = {
     ...GROUPS.faceEdge
   ],
 
-  extreme: Array.from({length: 120}, (_, i) => i)
+  // Extreme için yüzeyin sağına soluna eşit yayılacak atlamalı indeksler
+  extreme: Array.from({length: 120}, (_, i) => i * 3) 
 };
 
-// 🔥 TEMİZLE
+// 🔥 SIFIRLAMA
 function clearPoints() {
   currentPoints.forEach(p => faceRoot.removeChild(p));
   currentPoints = [];
 }
 
-// 🔥 NOKTA OLUŞTUR
+// 🔥 NOKTA ÜRETİM MOTORU
 function createPoint(index, color="#00FF00") {
+  // Takip Çıpası (Target)
   const entity = document.createElement("a-entity");
   entity.setAttribute("mindar-face-target", `anchorIndex: ${index}`);
 
+  // Görsel (Küre)
   const sphere = document.createElement("a-sphere");
-  sphere.setAttribute("radius", "0.015");
+  sphere.setAttribute("radius", "0.007"); // 0.015 çok büyüktü, noktalar üst üste biniyordu.
   sphere.setAttribute("color", color);
   sphere.setAttribute("opacity", "0.9");
 
+  // Hiyerarşi: Sphere -> Entity -> Root
   entity.appendChild(sphere);
-
-  // 🔥 KRİTİK: faceRoot içine ekliyoruz
   faceRoot.appendChild(entity);
 
   currentPoints.push(entity);
 }
 
-// 🔥 PERFORMANS UYARI
+// 🔥 PERFORMANS GÜVENLİĞİ
 function performanceCheck(count) {
   if (count > 80) {
-    alert("⚠️ Çok fazla nokta! Mobilde kasma olabilir.");
+    info.style.color = "#fbbf24"; // Sarı uyarı
+    info.textContent = `Uyarı: ${count} nokta. Cihaz ısınabilir!`;
+  } else {
+    info.style.color = "#10b981"; // Yeşil
+    info.textContent = `Aktif Nokta: ${count}`;
   }
 }
 
-// 🔥 MOD DEĞİŞTİR
+// 🔥 MOD DEĞİŞTİRİCİ
 function setMode(mode) {
-
   clearPoints();
-
   const points = MODES[mode];
-
+  
   performanceCheck(points.length);
 
   points.forEach(i => {
+    let color = "#10b981"; // Varsayılan Yeşil
 
-    let color = "#00FF00";
-
-    if (GROUPS.leftEye.includes(i)) color = "#00FFFF";
-    if (GROUPS.rightEye.includes(i)) color = "#FF00FF";
-    if (GROUPS.mouth.includes(i)) color = "#FFFF00";
-    if (GROUPS.nose.includes(i)) color = "#FF0000";
+    if (GROUPS.leftEye.includes(i)) color = "#0ea5e9"; // Mavi
+    if (GROUPS.rightEye.includes(i)) color = "#d946ef"; // Pembe
+    if (GROUPS.mouth.includes(i)) color = "#f59e0b"; // Turuncu
+    if (GROUPS.nose.includes(i)) color = "#ef4444"; // Kırmızı
 
     createPoint(i, color);
   });
-
-  info.textContent = "Nokta: " + points.length;
 }
 
-// 🔥 BAŞLANGIÇ
+// 🔥 BAŞLAT
 window.addEventListener("load", () => {
   setMode("medium");
 });
