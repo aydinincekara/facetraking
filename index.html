@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Tracking v2.0 | Dinamik Tel Kafes (Mesh)</title>
+  <title>Face Tracking v2.1 | Gelişmiş Tel Kafes (Full Mesh)</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 
@@ -23,28 +23,30 @@
   </style>
 
   <script>
-    // 🔥 EĞİTİMİN KALBİ: KENDİ BİLEŞENİMİZİ (CUSTOM COMPONENT) YAZIYORUZ
-    // Bu bileşen, hareket eden iki "mindar-face-target" nesnesinin arasına dinamik bir lastik gibi çizgi gerer.
+    // 🔥 DÜZELTİLMİŞ ÇİZGİ BİLEŞENİ (Artık hata vermeden çizgileri anlık çizer)
     AFRAME.registerComponent('dynamic-line', {
       schema: {
-        target1: {type: 'selector'}, // 1. Noktanın ID'si
-        target2: {type: 'selector'}, // 2. Noktanın ID'si
-        color: {default: '#0ea5e9'}  // Çizgi rengi (Siberpunk Mavi)
+        id1: {type: 'string'}, // 1. Noktanın HTML ID'si
+        id2: {type: 'string'}, // 2. Noktanın HTML ID'si
+        color: {default: '#0ea5e9'} // Siberpunk Mavi
       },
       
-      // Saniyede 60 kez çalışan döngü (Tick)
       tick: function () {
-        // Eğer noktalar HTML'de henüz oluşmadıysa işlemi durdur
-        if (!this.data.target1 || !this.data.target2) return;
+        const el1 = document.getElementById(this.data.id1);
+        const el2 = document.getElementById(this.data.id2);
+        
+        // Eğer noktalar henüz sahnede yoksa bekle
+        if (!el1 || !el2 || !el1.object3D || !el2.object3D) return;
 
-        // İki noktanın anlık 3D pozisyonlarını (X, Y, Z) al
-        const pos1 = this.data.target1.object3D.position;
-        const pos2 = this.data.target2.object3D.position;
+        const p1 = el1.object3D.position;
+        const p2 = el2.object3D.position;
 
-        // A-Frame'in 'line' özelliğini anlık pozisyonlarla güncelle
-        this.el.setAttribute('line', 'start', pos1);
-        this.el.setAttribute('line', 'end', pos2);
-        this.el.setAttribute('line', 'color', this.data.color);
+        // A-Frame'in okuyabileceği kesin string formatı: "X Y Z"
+        const startStr = `${p1.x} ${p1.y} ${p1.z}`;
+        const endStr = `${p2.x} ${p2.y} ${p2.z}`;
+
+        // Çizgiyi her karede anlık olarak güncelle
+        this.el.setAttribute('line', `start: ${startStr}; end: ${endStr}; color: ${this.data.color}`);
       }
     });
   </script>
@@ -53,8 +55,8 @@
 <body>
 
 <div id="ui">
-  <div class="info-panel">MODÜL 1: Tel Kafes (Wireframe)</div>
-  <div id="info">Cyber-Maske Yükleniyor...</div>
+  <div class="info-panel">MODÜL 1: Gelişmiş Tel Kafes</div>
+  <div id="info">Mesh Yükleniyor...</div>
 </div>
 
 <a-scene 
@@ -70,72 +72,81 @@
 const sceneEl = document.querySelector("#main-scene");
 const info = document.getElementById("info");
 
-// Hafızada tuttuğumuz objeler
+// Hafızada tuttuğumuz objeler (Aynı noktayı iki kez yaratmamak için)
 let currentAnchors = {}; 
 
-// 🔥 HANGİ NOKTALAR BİRBİRİNE BAĞLANACAK? (Mesh Haritası)
-// Format: [Nokta_A_Index, Nokta_B_Index]
+// 🔥 DETAYLI MESH HARİTASI (Yaklaşık 70 Bağlantı)
 const MESH_CONNECTIONS = [
-  // Sol Göz Çerçevesi (Diamond)
-  [33, 133], [133, 159], [159, 145], [145, 33],
-  // Sağ Göz Çerçevesi (Diamond)
-  [263, 362], [362, 386], [386, 374], [374, 263],
-  // Burun Köprüsü
-  [10, 152], // Alından burun ucuna
-  // Gözleri Buruna Bağlayan Köprüler
-  [133, 10], [362, 10],
-  // Yanaklardan Çeneye (Siber Hatlar)
-  [33, 152], [263, 152]
+  // Sol Göz Çerçevesi
+  [33, 160], [160, 158], [158, 133], [133, 153], [153, 144], [144, 33],
+  // Sağ Göz Çerçevesi
+  [362, 385], [385, 387], [387, 263], [263, 373], [373, 380], [380, 362],
+  
+  // Burun Omurgası ve Ucu
+  [10, 151], [151, 9], [9, 8], [8, 168], [168, 6], [6, 197], [197, 195], [195, 5], [5, 4], [4, 1], [1, 19], [19, 94], [94, 2],
+  
+  // Dudak Dış Çerçevesi
+  [61, 185], [185, 40], [40, 39], [39, 37], [37, 0], [0, 267], [267, 269], [269, 270], [270, 409], [409, 291], 
+  [291, 375], [375, 321], [321, 405], [405, 314], [314, 17], [17, 84], [84, 181], [181, 91], [91, 146], [146, 61],
+  
+  // Yüz Konturu (Sol Çene Hattı)
+  [234, 93], [93, 132], [132, 58], [58, 172], [172, 136], [136, 150], [150, 149], [149, 176], [176, 148], [148, 152],
+  // Yüz Konturu (Sağ Çene Hattı)
+  [454, 323], [323, 361], [361, 288], [288, 397], [397, 365], [365, 379], [379, 378], [378, 400], [400, 377], [377, 152],
+  
+  // Çapraz Siber Bağlantılar (Yüzü ağ gibi saran hatlar)
+  [33, 234], [263, 454], // Gözlerden yanaklara
+  [133, 168], [362, 168], // İç gözlerden burun köküne
+  [61, 234], [291, 454], // Dudaklardan kulak hizasına
+  [4, 61], [4, 291], // Burun ucundan dudak kenarlarına
+  [10, 33], [10, 263] // Alından dış gözlere
 ];
 
-// Ekranda nokta (anchor) yaratma fonksiyonu
+// Nokta (Anchor) Yaratma Motoru
 function createAnchor(index) {
-  if (currentAnchors[index]) return currentAnchors[index]; // Varsa tekrar yaratma
+  if (currentAnchors[index]) return currentAnchors[index].id; 
 
-  const entity = document.createElement("a-entity");
-  // Noktaya benzersiz bir ID veriyoruz (Örn: #point-33)
   const id = `point-${index}`;
+  const entity = document.createElement("a-entity");
   entity.setAttribute("id", id);
   entity.setAttribute("mindar-face-target", `anchorIndex: ${index}`);
 
-  // Noktanın kendisini (küreyi) estetik olarak biraz daha küçültelim ki çizgiler öne çıksın
+  // Bağlantı noktaları (Küçük beyaz ışıklar)
   const sphere = document.createElement("a-sphere");
-  sphere.setAttribute("radius", "0.003"); 
-  sphere.setAttribute("color", "#fff");
+  sphere.setAttribute("radius", "0.002"); 
+  sphere.setAttribute("color", "#ffffff");
+  sphere.setAttribute("opacity", "0.8");
   
   entity.appendChild(sphere);
   sceneEl.appendChild(entity);
 
-  currentAnchors[index] = entity; // Hafızaya al
+  currentAnchors[index] = { id: id, entity: entity }; 
   return id;
 }
 
-// Çizgi (Line) yaratma fonksiyonu
+// Çizgi (Line) Yaratma Motoru
 function createLine(id1, id2) {
   const lineEntity = document.createElement("a-entity");
-  // Yazdığımız özel bileşeni (dynamic-line) kullanıyoruz
-  lineEntity.setAttribute("dynamic-line", `target1: #${id1}; target2: #${id2}; color: #0ea5e9`);
+  // Bileşenimize ID'leri string olarak iletiyoruz
+  lineEntity.setAttribute("dynamic-line", `id1: ${id1}; id2: ${id2}; color: #00FFFF`);
   sceneEl.appendChild(lineEntity);
 }
 
-// Sahne yüklendiğinde Mesh'i oluştur
+// Sahne tam yüklendiğinde işlemleri başlat (Titremeyi ve kasmayı önler)
 sceneEl.addEventListener('loaded', function () {
     let lineCount = 0;
 
     MESH_CONNECTIONS.forEach(pair => {
-      const indexA = pair[0];
-      const indexB = pair[1];
+      // Çizilecek iki noktanın ID'sini al/yarat
+      const idA = createAnchor(pair[0]);
+      const idB = createAnchor(pair[1]);
 
-      // Önce noktaları yarat ve ID'lerini al
-      const idA = createAnchor(indexA);
-      const idB = createAnchor(indexB);
-
-      // Sonra bu iki ID arasına dinamik çizgi çek
+      // Bu iki ID arasına anlık güncellenen çizgi çek
       createLine(idA, idB);
       lineCount++;
     });
 
-    info.textContent = `Aktif Çizgi: ${lineCount} | Mesh Hazır!`;
+    info.textContent = `Toplam Çizgi: ${lineCount} | Mesh Aktif!`;
 });
 </script>
 
