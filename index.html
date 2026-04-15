@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Tracking v1.2.0 | Stabil Çekirdek</title>
+  <title>Face Tracking v1.3.0 | Açı Sorunu Çözüldü</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 
@@ -47,7 +47,7 @@
 <body>
 
 <div id="ui">
-  <div class="info-panel">Versiyon: v1.2.0 (Stabil)</div>
+  <div class="info-panel">Versiyon: v1.3.0 (Kusursuz Açı)</div>
   <div id="info">Nokta: 0</div>
 
   <div style="margin-top: 10px;">
@@ -59,6 +59,7 @@
 </div>
 
 <a-scene 
+  id="main-scene"
   mindar-face="autoStart: true; mirror: false;"
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false"
@@ -66,14 +67,13 @@
   renderer="colorManagement: true"
 >
 
-  <a-camera active="false" position="0 0 0"></a-camera>
+  <a-camera active="false" position="0 0 0" look-controls="enabled: false"></a-camera>
 
-  <a-entity id="faceRoot"></a-entity>
-
-</a-scene>
+  </a-scene>
 
 <script>
-const faceRoot = document.querySelector("#faceRoot");
+// Sahneyi (scene) seçiyoruz
+const sceneEl = document.querySelector("#main-scene");
 const info = document.getElementById("info");
 
 let currentPoints = [];
@@ -107,13 +107,17 @@ const MODES = {
     ...GROUPS.faceEdge
   ],
 
-  // Extreme için yüzeyin sağına soluna eşit yayılacak atlamalı indeksler
+  // Extreme için homojen dağılım
   extreme: Array.from({length: 120}, (_, i) => i * 3) 
 };
 
-// 🔥 SIFIRLAMA
+// 🔥 SIFIRLAMA (Sahnedeki mevcut noktaları sil)
 function clearPoints() {
-  currentPoints.forEach(p => faceRoot.removeChild(p));
+  currentPoints.forEach(p => {
+    if(p.parentNode) {
+        p.parentNode.removeChild(p);
+    }
+  });
   currentPoints = [];
 }
 
@@ -125,13 +129,15 @@ function createPoint(index, color="#00FF00") {
 
   // Görsel (Küre)
   const sphere = document.createElement("a-sphere");
-  sphere.setAttribute("radius", "0.007"); // 0.015 çok büyüktü, noktalar üst üste biniyordu.
+  sphere.setAttribute("radius", "0.007"); 
   sphere.setAttribute("color", color);
   sphere.setAttribute("opacity", "0.9");
 
-  // Hiyerarşi: Sphere -> Entity -> Root
+  // Küreyi takip noktasına ekle
   entity.appendChild(sphere);
-  faceRoot.appendChild(entity);
+
+  // 🔥 KRİTİK DEĞİŞİKLİK: Takip noktasını DOĞRUDAN a-scene içine ekle
+  sceneEl.appendChild(entity);
 
   currentPoints.push(entity);
 }
@@ -139,10 +145,10 @@ function createPoint(index, color="#00FF00") {
 // 🔥 PERFORMANS GÜVENLİĞİ
 function performanceCheck(count) {
   if (count > 80) {
-    info.style.color = "#fbbf24"; // Sarı uyarı
+    info.style.color = "#fbbf24"; 
     info.textContent = `Uyarı: ${count} nokta. Cihaz ısınabilir!`;
   } else {
-    info.style.color = "#10b981"; // Yeşil
+    info.style.color = "#10b981"; 
     info.textContent = `Aktif Nokta: ${count}`;
   }
 }
@@ -157,18 +163,20 @@ function setMode(mode) {
   points.forEach(i => {
     let color = "#10b981"; // Varsayılan Yeşil
 
-    if (GROUPS.leftEye.includes(i)) color = "#0ea5e9"; // Mavi
-    if (GROUPS.rightEye.includes(i)) color = "#d946ef"; // Pembe
-    if (GROUPS.mouth.includes(i)) color = "#f59e0b"; // Turuncu
-    if (GROUPS.nose.includes(i)) color = "#ef4444"; // Kırmızı
+    if (GROUPS.leftEye.includes(i)) color = "#0ea5e9"; 
+    if (GROUPS.rightEye.includes(i)) color = "#d946ef"; 
+    if (GROUPS.mouth.includes(i)) color = "#f59e0b"; 
+    if (GROUPS.nose.includes(i)) color = "#ef4444"; 
 
     createPoint(i, color);
   });
 }
 
 // 🔥 BAŞLAT
-window.addEventListener("load", () => {
-  setMode("medium");
+// Not: A-Frame sahnesi tamamen yüklenmeden dinamik element eklemek bazen hatalara yol açabilir.
+// Bu yüzden sahnenin 'loaded' olayını dinliyoruz.
+sceneEl.addEventListener('loaded', function () {
+    setMode("medium");
 });
 </script>
 
