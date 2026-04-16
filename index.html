@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Tracking v2.1 | Gelişmiş Tel Kafes (Full Mesh)</title>
+  <title>Face Tracking v2.2 | Kusursuz Tel Kafes</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 
@@ -23,30 +23,44 @@
   </style>
 
   <script>
-    // 🔥 DÜZELTİLMİŞ ÇİZGİ BİLEŞENİ (Artık hata vermeden çizgileri anlık çizer)
+    // 🔥 GERÇEK DÜNYA KOORDİNATLARI İLE GÜNCELLENMİŞ ÇİZGİ MOTORU
     AFRAME.registerComponent('dynamic-line', {
       schema: {
-        id1: {type: 'string'}, // 1. Noktanın HTML ID'si
-        id2: {type: 'string'}, // 2. Noktanın HTML ID'si
-        color: {default: '#0ea5e9'} // Siberpunk Mavi
+        id1: {type: 'string'},
+        id2: {type: 'string'},
+        color: {default: '#0ea5e9'}
       },
       
+      // Performans için değişkenleri bir kez hafızaya alıyoruz
+      init: function () {
+        this.p1 = new THREE.Vector3();
+        this.p2 = new THREE.Vector3();
+      },
+
       tick: function () {
         const el1 = document.getElementById(this.data.id1);
         const el2 = document.getElementById(this.data.id2);
         
-        // Eğer noktalar henüz sahnede yoksa bekle
         if (!el1 || !el2 || !el1.object3D || !el2.object3D) return;
 
-        const p1 = el1.object3D.position;
-        const p2 = el2.object3D.position;
+        // 🔥 GÜVENLİK KİLİDİ: Yüz ekranda yoksa çizgileri gizle
+        if (!el1.object3D.visible) {
+            this.el.setAttribute('visible', false);
+            return;
+        } else {
+            this.el.setAttribute('visible', true);
+        }
 
-        // A-Frame'in okuyabileceği kesin string formatı: "X Y Z"
-        const startStr = `${p1.x} ${p1.y} ${p1.z}`;
-        const endStr = `${p2.x} ${p2.y} ${p2.z}`;
+        // 🔥 KESİN ÇÖZÜM: Yerel pozisyon yerine "Gerçek Dünya Pozisyonunu" oku
+        el1.object3D.getWorldPosition(this.p1);
+        el2.object3D.getWorldPosition(this.p2);
 
-        // Çizgiyi her karede anlık olarak güncelle
-        this.el.setAttribute('line', `start: ${startStr}; end: ${endStr}; color: ${this.data.color}`);
+        // A-Frame'e objeleri doğrudan ileterek çizgiyi çizdir
+        this.el.setAttribute('line', {
+            start: this.p1,
+            end: this.p2,
+            color: this.data.color
+        });
       }
     });
   </script>
@@ -55,7 +69,7 @@
 <body>
 
 <div id="ui">
-  <div class="info-panel">MODÜL 1: Gelişmiş Tel Kafes</div>
+  <div class="info-panel">MODÜL 1: Kusursuz Tel Kafes</div>
   <div id="info">Mesh Yükleniyor...</div>
 </div>
 
@@ -71,38 +85,27 @@
 <script>
 const sceneEl = document.querySelector("#main-scene");
 const info = document.getElementById("info");
-
-// Hafızada tuttuğumuz objeler (Aynı noktayı iki kez yaratmamak için)
 let currentAnchors = {}; 
 
-// 🔥 DETAYLI MESH HARİTASI (Yaklaşık 70 Bağlantı)
+// Yüzü saran bağlantı noktaları
 const MESH_CONNECTIONS = [
   // Sol Göz Çerçevesi
   [33, 160], [160, 158], [158, 133], [133, 153], [153, 144], [144, 33],
   // Sağ Göz Çerçevesi
   [362, 385], [385, 387], [387, 263], [263, 373], [373, 380], [380, 362],
-  
   // Burun Omurgası ve Ucu
-  [10, 151], [151, 9], [9, 8], [8, 168], [168, 6], [6, 197], [197, 195], [195, 5], [5, 4], [4, 1], [1, 19], [19, 94], [94, 2],
-  
+  [10, 151], [151, 9], [9, 8], [8, 168], [168, 6], [6, 197], [197, 195], [195, 5], [5, 4], [4, 1],
   // Dudak Dış Çerçevesi
   [61, 185], [185, 40], [40, 39], [39, 37], [37, 0], [0, 267], [267, 269], [269, 270], [270, 409], [409, 291], 
   [291, 375], [375, 321], [321, 405], [405, 314], [314, 17], [17, 84], [84, 181], [181, 91], [91, 146], [146, 61],
-  
-  // Yüz Konturu (Sol Çene Hattı)
-  [234, 93], [93, 132], [132, 58], [58, 172], [172, 136], [136, 150], [150, 149], [149, 176], [176, 148], [148, 152],
-  // Yüz Konturu (Sağ Çene Hattı)
-  [454, 323], [323, 361], [361, 288], [288, 397], [397, 365], [365, 379], [379, 378], [378, 400], [400, 377], [377, 152],
-  
-  // Çapraz Siber Bağlantılar (Yüzü ağ gibi saran hatlar)
-  [33, 234], [263, 454], // Gözlerden yanaklara
-  [133, 168], [362, 168], // İç gözlerden burun köküne
-  [61, 234], [291, 454], // Dudaklardan kulak hizasına
+  // Çapraz Siber Bağlantılar
+  [33, 152], [263, 152], // Gözlerden çeneye
+  [133, 168], [362, 168], // Göz pınarlarından burun köküne
+  [61, 152], [291, 152], // Dudaklardan çeneye
   [4, 61], [4, 291], // Burun ucundan dudak kenarlarına
-  [10, 33], [10, 263] // Alından dış gözlere
+  [10, 33], [10, 263] // Alından göz dış kenarlarına
 ];
 
-// Nokta (Anchor) Yaratma Motoru
 function createAnchor(index) {
   if (currentAnchors[index]) return currentAnchors[index].id; 
 
@@ -111,11 +114,11 @@ function createAnchor(index) {
   entity.setAttribute("id", id);
   entity.setAttribute("mindar-face-target", `anchorIndex: ${index}`);
 
-  // Bağlantı noktaları (Küçük beyaz ışıklar)
   const sphere = document.createElement("a-sphere");
-  sphere.setAttribute("radius", "0.002"); 
+  // 🔥 DÜZELTME: Boyut optimum seviyeye (0.006) çıkarıldı.
+  sphere.setAttribute("radius", "0.006"); 
   sphere.setAttribute("color", "#ffffff");
-  sphere.setAttribute("opacity", "0.8");
+  sphere.setAttribute("opacity", "0.9");
   
   entity.appendChild(sphere);
   sceneEl.appendChild(entity);
@@ -124,30 +127,30 @@ function createAnchor(index) {
   return id;
 }
 
-// Çizgi (Line) Yaratma Motoru
 function createLine(id1, id2) {
   const lineEntity = document.createElement("a-entity");
-  // Bileşenimize ID'leri string olarak iletiyoruz
   lineEntity.setAttribute("dynamic-line", `id1: ${id1}; id2: ${id2}; color: #00FFFF`);
   sceneEl.appendChild(lineEntity);
 }
 
-// Sahne tam yüklendiğinde işlemleri başlat (Titremeyi ve kasmayı önler)
-sceneEl.addEventListener('loaded', function () {
+// Sistemi Başlatma Fonksiyonu
+const initMesh = () => {
     let lineCount = 0;
-
     MESH_CONNECTIONS.forEach(pair => {
-      // Çizilecek iki noktanın ID'sini al/yarat
       const idA = createAnchor(pair[0]);
       const idB = createAnchor(pair[1]);
-
-      // Bu iki ID arasına anlık güncellenen çizgi çek
       createLine(idA, idB);
       lineCount++;
     });
+    info.textContent = `Ağ Bağlantısı: ${lineCount} | Mesh Aktif!`;
+};
 
-    info.textContent = `Toplam Çizgi: ${lineCount} | Mesh Aktif!`;
-});
+// Sayfa yüklenme güvenliği
+if (sceneEl.hasLoaded) {
+    initMesh();
+} else {
+    sceneEl.addEventListener('loaded', initMesh);
+}
 </script>
 
 </body>
