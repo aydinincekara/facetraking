@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Tracking v3.2 | Performans Optimizasyonu (60 FPS)</title>
+  <title>Face Tracking v3.3 | Full Combo (Mesh + Makyaj)</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
@@ -14,43 +14,68 @@
       position:absolute; top:10px; left:10px; color:#fff;
       background:rgba(0,0,0,0.8); padding:15px; border-radius:10px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      z-index:999; box-shadow: 0 4px 15px rgba(255,0,127,0.3);
-      border: 1px solid #ff007f;
+      z-index:999; box-shadow: 0 4px 15px rgba(0,255,255,0.3);
+      border: 1px solid #0ea5e9;
     }
-    .info-panel { margin-bottom: 5px; font-weight: bold; color: #ff007f; }
+    .info-panel { margin-bottom: 5px; font-weight: bold; color: #0ea5e9; }
     #info { color: #fff; font-size: 13px; margin-top: 5px; }
   </style>
 
   <script>
-    // 🔥 60 FPS İÇİN OPTİMİZE EDİLMİŞ DİNAMİK ÜÇGEN BİLEŞENİ
+    // ---------------------------------------------------------
+    // 1. ÇİZGİ MOTORU (Siberpunk Tel Kafes İçin)
+    // ---------------------------------------------------------
+    AFRAME.registerComponent('dynamic-line', {
+      schema: { id1: {type: 'string'}, id2: {type: 'string'}, color: {default: '#0ea5e9'} },
+      init: function () {
+        this.p1 = new THREE.Vector3();
+        this.p2 = new THREE.Vector3();
+      },
+      tick: function () {
+        const el1 = document.getElementById(this.data.id1);
+        const el2 = document.getElementById(this.data.id2);
+        
+        if (!el1 || !el2 || !el1.object3D.visible) {
+            this.el.setAttribute('visible', false);
+            return;
+        }
+        this.el.setAttribute('visible', true);
+
+        // Kasmadan Gerçek Dünya Koordinatını Al
+        el1.object3D.getWorldPosition(this.p1);
+        el2.object3D.getWorldPosition(this.p2);
+
+        const startStr = `${this.p1.x.toFixed(4)} ${this.p1.y.toFixed(4)} ${this.p1.z.toFixed(4)}`;
+        const endStr = `${this.p2.x.toFixed(4)} ${this.p2.y.toFixed(4)} ${this.p2.z.toFixed(4)}`;
+        this.el.setAttribute('line', `start: ${startStr}; end: ${endStr}; color: ${this.data.color}`);
+      }
+    });
+
+    // ---------------------------------------------------------
+    // 2. ÜÇGEN MOTORU (Dinamik Makyaj/Yüzey İçin)
+    // ---------------------------------------------------------
     AFRAME.registerComponent('dynamic-triangle', {
       schema: {
-        id1: {type: 'string'},
-        id2: {type: 'string'},
-        id3: {type: 'string'},
-        color: {default: '#ff007f'}, 
-        opacity: {default: 0.8}
+        id1: {type: 'string'}, id2: {type: 'string'}, id3: {type: 'string'},
+        color: {default: '#ff007f'}, opacity: {default: 0.6}
       },
-      
       init: function () {
+        this.p1 = new THREE.Vector3(); this.p2 = new THREE.Vector3(); this.p3 = new THREE.Vector3();
+        
         this.geometry = new THREE.BufferGeometry();
         const vertices = new Float32Array(9); 
         this.geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
         this.material = new THREE.MeshBasicMaterial({
           color: new THREE.Color(this.data.color),
-          transparent: true,
-          opacity: this.data.opacity,
-          side: THREE.DoubleSide,
-          depthTest: false,
-          depthWrite: false
+          transparent: true, opacity: this.data.opacity, side: THREE.DoubleSide,
+          depthTest: false, depthWrite: false // Yırtılmaları Engeller
         });
 
         this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.mesh.frustumCulled = false; 
+        this.mesh.frustumCulled = false; // Kaybolmaları Engeller
         this.el.setObject3D('mesh', this.mesh);
       },
-
       tick: function () {
         const el1 = document.getElementById(this.data.id1);
         const el2 = document.getElementById(this.data.id2);
@@ -62,16 +87,15 @@
         }
         this.mesh.visible = true;
 
-        // 🔥 CPU KURTARICISI: Ağır dünya matrisi (updateMatrixWorld) hesaplamaları SİLİNDİ!
-        // Bunun yerine ışık hızında okunan yerel .position değerleri alındı.
-        const p1 = el1.object3D.position;
-        const p2 = el2.object3D.position;
-        const p3 = el3.object3D.position;
+        // Kasmadan Gerçek Dünya Koordinatını Al
+        el1.object3D.getWorldPosition(this.p1);
+        el2.object3D.getWorldPosition(this.p2);
+        el3.object3D.getWorldPosition(this.p3);
 
-        const positions = this.mesh.geometry.attributes.position.array;
-        positions[0] = p1.x; positions[1] = p1.y; positions[2] = p1.z;
-        positions[3] = p2.x; positions[4] = p2.y; positions[5] = p2.z;
-        positions[6] = p3.x; positions[7] = p3.y; positions[8] = p3.z;
+        const pos = this.mesh.geometry.attributes.position.array;
+        pos[0] = this.p1.x; pos[1] = this.p1.y; pos[2] = this.p1.z;
+        pos[3] = this.p2.x; pos[4] = this.p2.y; pos[5] = this.p2.z;
+        pos[6] = this.p3.x; pos[7] = this.p3.y; pos[8] = this.p3.z;
         
         this.mesh.geometry.attributes.position.needsUpdate = true;
       }
@@ -82,13 +106,13 @@
 <body>
 
 <div id="ui">
-  <div class="info-panel">MODÜL 2: Dinamik Makyaj (Optimize)</div>
-  <div id="info">Yüzeyler Örülüyor...</div>
+  <div class="info-panel">MODÜL 1 & 2: Full AR Sistemi</div>
+  <div id="info">Sistem Başlatılıyor...</div>
 </div>
 
 <a-scene 
   id="main-scene"
-  mindar-face="autoStart: true; mirror: false; filterMinCF: 0.001; filterBeta: 0.01;"
+  mindar-face="autoStart: true; mirror: false;"
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false"
 >
@@ -100,30 +124,26 @@ const sceneEl = document.querySelector("#main-scene");
 const info = document.getElementById("info");
 let currentAnchors = {}; 
 
-const MAKEUP_SURFACES = [
-  // Sol Göz Farı (Turkuaz)
-  [133, 159, 153, "#00FFFF", 0.7],
-  [159, 158, 153, "#00FFFF", 0.7],
-  [158, 160, 144, "#00FFFF", 0.7],
-
-  // Sağ Göz Farı (Turkuaz)
-  [362, 386, 380, "#00FFFF", 0.7],
-  [386, 385, 380, "#00FFFF", 0.7],
-  [385, 387, 373, "#00FFFF", 0.7],
-
-  // Sol Yanak Allığı (Pembe)
-  [234, 93, 132, "#FF007F", 0.8],
-  [93, 132, 58, "#FF007F", 0.8],
-
-  // Sağ Yanak Allığı (Pembe)
-  [454, 323, 361, "#FF007F", 0.8],
-  [323, 361, 288, "#FF007F", 0.8],
-  
-  // Dudak - Bıyık Bölgesi (Sarı)
-  [61, 37, 267, "#FFD700", 0.8],
-  [291, 267, 37, "#FFD700", 0.8]
+// 🔥 ÇİZGİLER (Mesh Hatları)
+const MESH_CONNECTIONS = [
+  [33, 160], [160, 158], [158, 133], [133, 153], [153, 144], [144, 33], // Sol Göz
+  [362, 385], [385, 387], [387, 263], [263, 373], [373, 380], [380, 362], // Sağ Göz
+  [10, 151], [151, 9], [9, 8], [8, 168], [168, 6], [6, 197], [197, 195], [195, 5], [5, 4], [4, 1], // Burun
+  [61, 185], [185, 40], [40, 39], [39, 37], [37, 0], [0, 267], [267, 269], [269, 270], [270, 409], [409, 291], // Dudak Üstü
+  [291, 375], [375, 321], [321, 405], [405, 314], [314, 17], [17, 84], [84, 181], [181, 91], [91, 146], [146, 61], // Dudak Altı
+  [10, 33], [10, 263], [33, 152], [263, 152] // Dış Konturlar
 ];
 
+// 🔥 MAKYAJ (Yüzeyler)
+const MAKEUP_SURFACES = [
+  [133, 159, 153, "#00FFFF", 0.6], [159, 158, 153, "#00FFFF", 0.6], [158, 160, 144, "#00FFFF", 0.6], // Sol Far
+  [362, 386, 380, "#00FFFF", 0.6], [386, 385, 380, "#00FFFF", 0.6], [385, 387, 373, "#00FFFF", 0.6], // Sağ Far
+  [234, 93, 132, "#FF007F", 0.7], [93, 132, 58, "#FF007F", 0.7], // Sol Allık
+  [454, 323, 361, "#FF007F", 0.7], [323, 361, 288, "#FF007F", 0.7], // Sağ Allık
+  [61, 37, 267, "#FFD700", 0.8], [291, 267, 37, "#FFD700", 0.8] // Dudak (Bıyık altı bölge)
+];
+
+// 1. NOKTA YARATICI (Geri Getirildi!)
 function createAnchor(index) {
   if (currentAnchors[index]) return currentAnchors[index].id; 
 
@@ -132,33 +152,56 @@ function createAnchor(index) {
   entity.setAttribute("id", id);
   entity.setAttribute("mindar-face-target", `anchorIndex: ${index}`);
   
+  // Noktaları (Küreleri) yeniden ekliyoruz!
+  const sphere = document.createElement("a-sphere");
+  sphere.setAttribute("radius", "0.003"); // Kibar boyut
+  sphere.setAttribute("color", "#ffffff");
+  sphere.setAttribute("opacity", "0.6");
+  entity.appendChild(sphere);
+
   sceneEl.appendChild(entity);
   currentAnchors[index] = { id: id, entity: entity }; 
   return id;
 }
 
+// 2. ÇİZGİ YARATICI
+function createLine(id1, id2) {
+  const lineEntity = document.createElement("a-entity");
+  lineEntity.setAttribute("dynamic-line", `id1: ${id1}; id2: ${id2}; color: #00FFFF`); // Turkuaz Çizgi
+  sceneEl.appendChild(lineEntity);
+}
+
+// 3. YÜZEY YARATICI
 function createTriangle(id1, id2, id3, color, opacity) {
   const polyEntity = document.createElement("a-entity");
   polyEntity.setAttribute("dynamic-triangle", `id1: ${id1}; id2: ${id2}; id3: ${id3}; color: ${color}; opacity: ${opacity}`);
   sceneEl.appendChild(polyEntity);
 }
 
-const initMakeup = () => {
-    let surfaceCount = 0;
+// SİSTEMİ BAŞLAT
+const initAR = () => {
+    // Önce Çizgileri Ör
+    MESH_CONNECTIONS.forEach(pair => {
+      const idA = createAnchor(pair[0]);
+      const idB = createAnchor(pair[1]);
+      createLine(idA, idB);
+    });
+
+    // Sonra Makyajı Ör
     MAKEUP_SURFACES.forEach(tri => {
       const idA = createAnchor(tri[0]);
       const idB = createAnchor(tri[1]);
       const idC = createAnchor(tri[2]);
       createTriangle(idA, idB, idC, tri[3], tri[4]);
-      surfaceCount++;
     });
-    info.textContent = `FPS Optimizasyonu Aktif: ${surfaceCount} Yüzey`;
+
+    info.textContent = `Aktif: Nokta, Çizgi ve Makyaj. Kusursuz.`;
 };
 
 if (sceneEl.hasLoaded) {
-    initMakeup();
+    initAR();
 } else {
-    sceneEl.addEventListener('loaded', initMakeup);
+    sceneEl.addEventListener('loaded', initAR);
 }
 </script>
 
