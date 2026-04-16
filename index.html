@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Tracking v2.2 | Kusursuz Tel Kafes</title>
+  <title>Face Tracking v2.2.1 | Sabit Çizgi Çözümü</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
 
@@ -23,7 +23,7 @@
   </style>
 
   <script>
-    // 🔥 GERÇEK DÜNYA KOORDİNATLARI İLE GÜNCELLENMİŞ ÇİZGİ MOTORU
+    // 🔥 SORUNSUZ ÇİZGİ MOTORU (v2)
     AFRAME.registerComponent('dynamic-line', {
       schema: {
         id1: {type: 'string'},
@@ -31,7 +31,6 @@
         color: {default: '#0ea5e9'}
       },
       
-      // Performans için değişkenleri bir kez hafızaya alıyoruz
       init: function () {
         this.p1 = new THREE.Vector3();
         this.p2 = new THREE.Vector3();
@@ -43,7 +42,6 @@
         
         if (!el1 || !el2 || !el1.object3D || !el2.object3D) return;
 
-        // 🔥 GÜVENLİK KİLİDİ: Yüz ekranda yoksa çizgileri gizle
         if (!el1.object3D.visible) {
             this.el.setAttribute('visible', false);
             return;
@@ -51,16 +49,20 @@
             this.el.setAttribute('visible', true);
         }
 
-        // 🔥 KESİN ÇÖZÜM: Yerel pozisyon yerine "Gerçek Dünya Pozisyonunu" oku
+        // 🛠 ÇÖZÜM 1: Objelerin dünya matrisini ZORLA güncelle (Eksen kaymasını engeller)
+        el1.object3D.updateMatrixWorld(true);
+        el2.object3D.updateMatrixWorld(true);
+
+        // Gerçek dünya koordinatlarını p1 ve p2'ye yaz
         el1.object3D.getWorldPosition(this.p1);
         el2.object3D.getWorldPosition(this.p2);
 
-        // A-Frame'e objeleri doğrudan ileterek çizgiyi çizdir
-        this.el.setAttribute('line', {
-            start: this.p1,
-            end: this.p2,
-            color: this.data.color
-        });
+        // 🛠 ÇÖZÜM 2: Caching hatasını önlemek için veriyi string olarak bas.
+        // toFixed(4) mikro titremeleri önler ve render motorunu rahatlatır.
+        const startStr = `${this.p1.x.toFixed(4)} ${this.p1.y.toFixed(4)} ${this.p1.z.toFixed(4)}`;
+        const endStr = `${this.p2.x.toFixed(4)} ${this.p2.y.toFixed(4)} ${this.p2.z.toFixed(4)}`;
+
+        this.el.setAttribute('line', `start: ${startStr}; end: ${endStr}; color: ${this.data.color}`);
       }
     });
   </script>
@@ -69,7 +71,7 @@
 <body>
 
 <div id="ui">
-  <div class="info-panel">MODÜL 1: Kusursuz Tel Kafes</div>
+  <div class="info-panel">MODÜL 1: Tel Kafes (Bug Fix)</div>
   <div id="info">Mesh Yükleniyor...</div>
 </div>
 
@@ -87,23 +89,21 @@ const sceneEl = document.querySelector("#main-scene");
 const info = document.getElementById("info");
 let currentAnchors = {}; 
 
-// Yüzü saran bağlantı noktaları
 const MESH_CONNECTIONS = [
-  // Sol Göz Çerçevesi
+  // Gözler
   [33, 160], [160, 158], [158, 133], [133, 153], [153, 144], [144, 33],
-  // Sağ Göz Çerçevesi
   [362, 385], [385, 387], [387, 263], [263, 373], [373, 380], [380, 362],
-  // Burun Omurgası ve Ucu
+  // Burun
   [10, 151], [151, 9], [9, 8], [8, 168], [168, 6], [6, 197], [197, 195], [195, 5], [5, 4], [4, 1],
-  // Dudak Dış Çerçevesi
+  // Dudak
   [61, 185], [185, 40], [40, 39], [39, 37], [37, 0], [0, 267], [267, 269], [269, 270], [270, 409], [409, 291], 
   [291, 375], [375, 321], [321, 405], [405, 314], [314, 17], [17, 84], [84, 181], [181, 91], [91, 146], [146, 61],
-  // Çapraz Siber Bağlantılar
-  [33, 152], [263, 152], // Gözlerden çeneye
-  [133, 168], [362, 168], // Göz pınarlarından burun köküne
-  [61, 152], [291, 152], // Dudaklardan çeneye
-  [4, 61], [4, 291], // Burun ucundan dudak kenarlarına
-  [10, 33], [10, 263] // Alından göz dış kenarlarına
+  // Yüz Bağlantıları
+  [33, 152], [263, 152], 
+  [133, 168], [362, 168], 
+  [61, 152], [291, 152], 
+  [4, 61], [4, 291], 
+  [10, 33], [10, 263] 
 ];
 
 function createAnchor(index) {
@@ -115,7 +115,6 @@ function createAnchor(index) {
   entity.setAttribute("mindar-face-target", `anchorIndex: ${index}`);
 
   const sphere = document.createElement("a-sphere");
-  // 🔥 DÜZELTME: Boyut optimum seviyeye (0.006) çıkarıldı.
   sphere.setAttribute("radius", "0.006"); 
   sphere.setAttribute("color", "#ffffff");
   sphere.setAttribute("opacity", "0.9");
@@ -133,7 +132,6 @@ function createLine(id1, id2) {
   sceneEl.appendChild(lineEntity);
 }
 
-// Sistemi Başlatma Fonksiyonu
 const initMesh = () => {
     let lineCount = 0;
     MESH_CONNECTIONS.forEach(pair => {
@@ -142,10 +140,9 @@ const initMesh = () => {
       createLine(idA, idB);
       lineCount++;
     });
-    info.textContent = `Ağ Bağlantısı: ${lineCount} | Mesh Aktif!`;
+    info.textContent = `Ağ Bağlantısı: ${lineCount} | Sorunsuz Çalışıyor!`;
 };
 
-// Sayfa yüklenme güvenliği
 if (sceneEl.hasLoaded) {
     initMesh();
 } else {
