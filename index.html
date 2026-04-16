@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Face Tracking v3.1 | Makyaj Fix (Frustum & DepthTest)</title>
+  <title>Face Tracking v3.2 | Performans Optimizasyonu (60 FPS)</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
@@ -22,21 +22,17 @@
   </style>
 
   <script>
-    // 🔥 YENİLENMİŞ DİNAMİK ÜÇGEN MOTORU
+    // 🔥 60 FPS İÇİN OPTİMİZE EDİLMİŞ DİNAMİK ÜÇGEN BİLEŞENİ
     AFRAME.registerComponent('dynamic-triangle', {
       schema: {
         id1: {type: 'string'},
         id2: {type: 'string'},
         id3: {type: 'string'},
         color: {default: '#ff007f'}, 
-        opacity: {default: 0.8} // Görünürlük artırıldı
+        opacity: {default: 0.8}
       },
       
       init: function () {
-        this.p1 = new THREE.Vector3();
-        this.p2 = new THREE.Vector3();
-        this.p3 = new THREE.Vector3();
-
         this.geometry = new THREE.BufferGeometry();
         const vertices = new Float32Array(9); 
         this.geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
@@ -46,16 +42,12 @@
           transparent: true,
           opacity: this.data.opacity,
           side: THREE.DoubleSide,
-          // 🔥 ÇÖZÜM 1: Z-Fighting (Derinlik Çakışmasını) engeller. Yüzey hep üstte kalır!
           depthTest: false,
           depthWrite: false
         });
 
         this.mesh = new THREE.Mesh(this.geometry, this.material);
-        
-        // 🔥 ÇÖZÜM 2: Frustum Culling kapatıldı. Başını çevirince obje KESİNLİKLE kaybolmaz!
         this.mesh.frustumCulled = false; 
-
         this.el.setObject3D('mesh', this.mesh);
       },
 
@@ -70,18 +62,16 @@
         }
         this.mesh.visible = true;
 
-        el1.object3D.updateMatrixWorld(true);
-        el2.object3D.updateMatrixWorld(true);
-        el3.object3D.updateMatrixWorld(true);
-
-        el1.object3D.getWorldPosition(this.p1);
-        el2.object3D.getWorldPosition(this.p2);
-        el3.object3D.getWorldPosition(this.p3);
+        // 🔥 CPU KURTARICISI: Ağır dünya matrisi (updateMatrixWorld) hesaplamaları SİLİNDİ!
+        // Bunun yerine ışık hızında okunan yerel .position değerleri alındı.
+        const p1 = el1.object3D.position;
+        const p2 = el2.object3D.position;
+        const p3 = el3.object3D.position;
 
         const positions = this.mesh.geometry.attributes.position.array;
-        positions[0] = this.p1.x; positions[1] = this.p1.y; positions[2] = this.p1.z;
-        positions[3] = this.p2.x; positions[4] = this.p2.y; positions[5] = this.p2.z;
-        positions[6] = this.p3.x; positions[7] = this.p3.y; positions[8] = this.p3.z;
+        positions[0] = p1.x; positions[1] = p1.y; positions[2] = p1.z;
+        positions[3] = p2.x; positions[4] = p2.y; positions[5] = p2.z;
+        positions[6] = p3.x; positions[7] = p3.y; positions[8] = p3.z;
         
         this.mesh.geometry.attributes.position.needsUpdate = true;
       }
@@ -92,13 +82,13 @@
 <body>
 
 <div id="ui">
-  <div class="info-panel">MODÜL 2: Dinamik Makyaj (Fix)</div>
+  <div class="info-panel">MODÜL 2: Dinamik Makyaj (Optimize)</div>
   <div id="info">Yüzeyler Örülüyor...</div>
 </div>
 
 <a-scene 
   id="main-scene"
-  mindar-face="autoStart: true; mirror: false;"
+  mindar-face="autoStart: true; mirror: false; filterMinCF: 0.001; filterBeta: 0.01;"
   vr-mode-ui="enabled: false"
   device-orientation-permission-ui="enabled: false"
 >
@@ -110,27 +100,26 @@ const sceneEl = document.querySelector("#main-scene");
 const info = document.getElementById("info");
 let currentAnchors = {}; 
 
-// Format: [Nokta1, Nokta2, Nokta3, Renk, Saydamlık (0.8 = Daha net)]
 const MAKEUP_SURFACES = [
-  // Sol Göz Farı
+  // Sol Göz Farı (Turkuaz)
   [133, 159, 153, "#00FFFF", 0.7],
   [159, 158, 153, "#00FFFF", 0.7],
   [158, 160, 144, "#00FFFF", 0.7],
 
-  // Sağ Göz Farı
+  // Sağ Göz Farı (Turkuaz)
   [362, 386, 380, "#00FFFF", 0.7],
   [386, 385, 380, "#00FFFF", 0.7],
   [385, 387, 373, "#00FFFF", 0.7],
 
-  // Sol Yanak Allığı
+  // Sol Yanak Allığı (Pembe)
   [234, 93, 132, "#FF007F", 0.8],
   [93, 132, 58, "#FF007F", 0.8],
 
-  // Sağ Yanak Allığı
+  // Sağ Yanak Allığı (Pembe)
   [454, 323, 361, "#FF007F", 0.8],
   [323, 361, 288, "#FF007F", 0.8],
   
-  // Dudak Parlatıcısı
+  // Dudak - Bıyık Bölgesi (Sarı)
   [61, 37, 267, "#FFD700", 0.8],
   [291, 267, 37, "#FFD700", 0.8]
 ];
@@ -163,7 +152,7 @@ const initMakeup = () => {
       createTriangle(idA, idB, idC, tri[3], tri[4]);
       surfaceCount++;
     });
-    info.textContent = `Aktif Makyaj Yüzeyi: ${surfaceCount} (Titreme Giderildi)`;
+    info.textContent = `FPS Optimizasyonu Aktif: ${surfaceCount} Yüzey`;
 };
 
 if (sceneEl.hasLoaded) {
