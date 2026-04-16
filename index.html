@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Geliştirme Portalı | Ana Merkez</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --neon-blue: #0ea5e9;
+            --neon-pink: #ff007f;
+            --neon-yellow: #ffd700;
+            --dark-bg: #050505;
+            --card-bg: rgba(20, 20, 20, 0.8);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--dark-bg);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            background-image: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 50px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 2px solid var(--neon-blue);
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin: 0;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 20px;
+        }
+
+        /* Proje Kartları */
+        .project-card {
+            background: var(--card-bg);
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-card:hover {
+            border-color: var(--neon-blue);
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(14, 165, 233, 0.2);
+        }
+
+        .project-card h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: var(--neon-yellow);
+        }
+
+        .module-badge {
+            display: inline-block;
+            background: var(--neon-blue);
+            color: #000;
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .project-note {
+            font-size: 0.95rem;
+            color: #ccc;
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        .tech-tags {
+            margin: 15px 0;
+            font-size: 0.85rem;
+            color: var(--neon-blue);
+            font-weight: bold;
+        }
+
+        .btn-enter {
+            display: block;
+            text-align: center;
+            background: transparent;
+            border: 2px solid var(--neon-pink);
+            color: var(--neon-pink);
+            padding: 12px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn-enter:hover {
+            background: var(--neon-pink);
+            color: #fff;
+            box-shadow: 0 0 15px var(--neon-pink);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>AR EXPERIENCE HUB</h1>
+        <p>Web Tabanlı Artırılmış Gerçeklik Laboratuvarı</p>
+    </header>
+
+    <div class="container">
+        
+        <div class="project-card">
+            <span class="module-badge">MODÜL 1 & 2</span>
+            <h2>Siber Mesh & Makyaj</h2>
+            <p class="project-note">
+                Yüz hatlarını takip eden (Face Tracking) 52 noktalı siber kafes ve 
+                dinamik poligonlardan oluşan dijital makyaj uygulaması.
+            </p>
+            <div class="tech-tags">Tech: A-Frame, Three.js, MindAR</div>
+            <a href="proje1.html" class="btn-enter">Deneyimi Başlat</a>
+        </div>
+
+        <div class="project-card">
+            <span class="module-badge">MODÜL 3 - v1</span>
+            <h2>Ateş Püskürtme</h2>
+            <p class="project-note">
+                Dudak mesafesi ve yüz genişliği oranıyla (Relative Ratio) çalışan, 
+                ağız açıldığında parçacık efekti tetikleyen etkileşimli filtre.
+            </p>
+            <div class="tech-tags">Tech: Expressions, Distance Logic</div>
+            <a href="proje2.html" class="btn-enter">Deneyimi Başlat</a>
+        </div>
+
+        <div class="project-card">
+            <span class="module-badge">MODÜL 3 - v2</span>
+            <h2>Göz Kırpma Tespiti</h2>
+            <p class="project-note">
+                Göz kapaklarının dikey oranını takip ederek renk değişimi ve 
+                görsel efekt tetikleyen mimik sensörü uygulaması.
+            </p>
+            <div class="tech-tags">Tech: Blink Detection, Filter Trigger</div>
+            <a href="proje3.html" class="btn-enter">Deneyimi Başlat</a>
+        </div>
+
+        <div class="project-card">
+            <span class="module-badge">MODÜL 4</span>
+            <h2>Kafa Takibi Oyunu</h2>
+            <p class="project-note">
+                Kullanıcının kafa hareketlerini bir joystick gibi kullanarak 
+                ekrandaki nesneleri topladığı etkileşimli WebAR oyunu.
+            </p>
+            <div class="tech-tags">Tech: Head Tracking, Collision Logic</div>
+            <a href="proje4.html" class="btn-enter">Deneyimi Başlat</a>
+        </div>
+
+    </div>
+
+    <footer>
+        &copy; 2024 AR Laboratuvarı | Eğitim Tasarımı ve Geliştirme
+    </footer>
+
+</body>
+</html>
