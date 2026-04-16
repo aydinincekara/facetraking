@@ -1,208 +1,61 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Deneyim Merkezi | Hoş Geldiniz</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Righteous&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --primary-blue: #0ea5e9;
-            --primary-pink: #ff007f;
-            --primary-yellow: #facc15;
-            --bg-color: #0f172a; /* Çok koyu lacivert, siyahtan daha yumuşak */
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>K.Çekmece AR | Proje 2</title>
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
+  <style>
+    body { margin: 0; background: #000; overflow: hidden; }
+    #ar-container { position: absolute; width: 100vw; height: 100vh; top: 0; left: 0; z-index: 1; }
+    #ui { position: absolute; top: 10px; left: 10px; z-index: 999; background: rgba(0,0,0,0.8); color: #fff; padding: 15px; border-radius: 10px; font-family: sans-serif; border: 1px solid #ff007f; text-align: center; }
+    .home-btn { position: fixed; top: 10px; right: 10px; z-index: 1000; background: #ff007f; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; font-family: sans-serif; }
+    #status { font-size: 20px; font-weight: 900; margin-top: 5px; color: #10b981; }
+  </style>
+  <script>
+    AFRAME.registerComponent('mouth-sensor', {
+      init: function () { this.p1 = new THREE.Vector3(); this.p2 = new THREE.Vector3(); this.p3 = new THREE.Vector3(); this.p4 = new THREE.Vector3(); },
+      tick: function () {
+        const top = document.getElementById('point-13'); const bot = document.getElementById('point-14');
+        const lEye = document.getElementById('point-33'); const rEye = document.getElementById('point-263');
+        const status = document.getElementById('status'); const fire = document.getElementById('fire-effect');
+        if (!top || !bot || !top.object3D.visible) return;
+        top.object3D.getWorldPosition(this.p1); bot.object3D.getWorldPosition(this.p2);
+        lEye.object3D.getWorldPosition(this.p3); rEye.object3D.getWorldPosition(this.p4);
+        const ratio = this.p1.distanceTo(this.p2) / this.p3.distanceTo(this.p4);
+        if (ratio > 0.12) {
+          status.innerText = "AĞIZ AÇIK! 🔥"; status.style.color = "#ff007f";
+          fire.setAttribute('visible', true);
+          fire.setAttribute('scale', `${ratio*5} ${ratio*5} ${ratio*5}`);
+        } else {
+          status.innerText = "Ağız Kapalı"; status.style.color = "#10b981";
+          fire.setAttribute('visible', false);
         }
-
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(255, 0, 127, 0.15), transparent 25%);
-            color: #f8fafc;
-            font-family: 'Nunito', sans-serif;
-            min-height: 100vh;
-        }
-
-        header {
-            text-align: center;
-            padding: 60px 20px 40px;
-        }
-
-        h1 {
-            font-family: 'Righteous', cursive;
-            font-size: 3rem;
-            margin: 0;
-            color: #fff;
-            text-shadow: 0 4px 15px rgba(14, 165, 233, 0.5);
-            letter-spacing: 2px;
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-            color: #94a3b8;
-            margin-top: 10px;
-            font-weight: 700;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto 60px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 35px;
-            padding: 20px;
-        }
-
-        /* Glassmorphism (Cam Efekti) Kartlar */
-        .project-card {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 30px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .project-card:hover {
-            transform: translateY(-15px) scale(1.02);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Kartlara özel hover glow efektleri */
-        .card-blue:hover { box-shadow: 0 15px 40px rgba(14, 165, 233, 0.3); }
-        .card-pink:hover { box-shadow: 0 15px 40px rgba(255, 0, 127, 0.3); }
-        .card-yellow:hover { box-shadow: 0 15px 40px rgba(250, 204, 21, 0.3); }
-
-        .module-badge {
-            align-self: flex-start;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 900;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
-        }
-
-        .badge-blue { background: var(--primary-blue); color: #fff; }
-        .badge-pink { background: var(--primary-pink); color: #fff; }
-        .badge-yellow { background: var(--primary-yellow); color: #000; }
-
-        .project-card h2 {
-            font-family: 'Righteous', cursive;
-            font-size: 1.6rem;
-            margin: 0 0 15px 0;
-            color: #fff;
-        }
-
-        .project-note {
-            font-size: 1rem;
-            color: #cbd5e1;
-            line-height: 1.6;
-            flex-grow: 1;
-            margin: 0 0 20px 0;
-        }
-
-        .tech-tags {
-            font-size: 0.85rem;
-            color: #94a3b8;
-            font-weight: 700;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 10px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-        }
-
-        /* Yuvarlak ve dost canlısı butonlar */
-        .btn-enter {
-            display: block;
-            text-align: center;
-            background: #fff;
-            color: #0f172a;
-            padding: 14px;
-            text-decoration: none;
-            border-radius: 16px;
-            font-weight: 900;
-            font-size: 1.1rem;
-            transition: 0.3s;
-        }
-
-        .card-blue .btn-enter:hover { background: var(--primary-blue); color: #fff; }
-        .card-pink .btn-enter:hover { background: var(--primary-pink); color: #fff; }
-        .card-yellow .btn-enter:hover { background: var(--primary-yellow); color: #000; }
-
-        footer {
-            text-align: center;
-            padding: 40px;
-            font-size: 0.95rem;
-            color: #64748b;
-            font-weight: 700;
-        }
-    </style>
+      }
+    });
+  </script>
 </head>
 <body>
-
-    <header>
-        <h1>🌟 AR SİHİR MERKEZİ</h1>
-        <div class="subtitle">Artırılmış Gerçeklik (Augmented Reality) Dünyasına Hoş Geldin!</div>
-    </header>
-
-    <div class="container">
-        
-        <div class="project-card card-blue">
-            <div class="module-badge badge-blue">PROJE 1</div>
-            <h2>Dijital Maske & Makyaj</h2>
-            <p class="project-note">
-                Kamerayı aç ve yüz hatlarını anında tanıyan (Face Tracking) akıllı ağın bir parçası ol. Kendi siber yüzeyini oluştur!
-            </p>
-            <div class="tech-tags">
-                🔧 Teknolojiler:<br>
-                Yüz Takibi (Face Tracking)<br>
-                Çoklugen Ağ (Polygon Mesh)
-            </div>
-            <a href="proje1.html" class="btn-enter">Hemen Dene!</a>
-        </div>
-
-        <div class="project-card card-pink">
-            <div class="module-badge badge-pink">PROJE 2</div>
-            <h2>Ateş Püskürten Ejderha</h2>
-            <p class="project-note">
-                Sistem mimiklerini okur. Ağzını kocaman açtığında (Mouth Opening) ekrandan alevlerin fışkırmasını sağlayan etkileşimli bir deneyim.
-            </p>
-            <div class="tech-tags">
-                🔧 Teknolojiler:<br>
-                Mimik Algılama (Expression Detection)<br>
-                Parçacık Sistemi (Particle System)
-            </div>
-            <a href="proje2.html" class="btn-enter">Hemen Dene!</a>
-        </div>
-
-        <div class="project-card card-yellow">
-            <div class="module-badge badge-yellow">PROJE 3</div>
-            <h2>Göz Kırpma Oyunu</h2>
-            <p class="project-note">
-                Sadece gözlerini kullanarak komut verebileceğini biliyor muydun? Göz kırpma (Blinking) ile filtrelerin rengini değiştir!
-            </p>
-            <div class="tech-tags">
-                🔧 Teknolojiler:<br>
-                Etkileşim (Interaction)<br>
-                Değişken Mantığı (Variable Logic)
-            </div>
-            <a href="proje3.html" class="btn-enter">Hemen Dene!</a>
-        </div>
-
-    </div>
-
-    <footer>
-        &copy; 2026 Gelişmiş AR Atölyesi | Geleceği Kodla (Code the Future)
-    </footer>
-
+  <a href="index.html" class="home-btn">🏠 ANA SAYFA</a>
+  <div id="ui">
+    <b>Proje 2: Ateş Püskürtme</b><div id="status">Bekleniyor...</div>
+  </div>
+  <div id="ar-container">
+    <a-scene embedded mindar-face="autoStart: true; mirror: false;" mouth-sensor>
+      <a-camera active="false" position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-entity mindar-face-target="anchorIndex: 13">
+        <a-sphere id="fire-effect" radius="0.05" material="shader: flat; color: #ff007f; transparent: true; opacity: 0.7" visible="false" position="0 -0.05 0.1"></a-sphere>
+      </a-entity>
+    </a-scene>
+  </div>
+  <script>
+    const sceneEl = document.querySelector("a-scene");
+    [13, 14, 33, 263].forEach(i => {
+      const e = document.createElement("a-entity"); e.setAttribute("id", `point-${i}`); e.setAttribute("mindar-face-target", `anchorIndex: ${i}`);
+      const s = document.createElement("a-sphere"); s.setAttribute("radius", "0.003"); s.setAttribute("material", "shader:flat; color:#fff");
+      e.appendChild(s); sceneEl.appendChild(e);
+    });
+  </script>
 </body>
 </html>
