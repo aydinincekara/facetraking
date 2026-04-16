@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Face Tracking v4.0 | Mimik Algılama</title>
+  <title>Face Tracking v4.1 | Kalibrasyonlu Mimik Sensörü</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
@@ -15,48 +15,58 @@
       background:rgba(0,0,0,0.8); padding:15px; border-radius:10px;
       font-family: 'Segoe UI', sans-serif; z-index:999; 
       box-shadow: 0 4px 15px rgba(0,255,255,0.3); border: 1px solid #0ea5e9;
-      text-align: center; min-width: 200px;
+      text-align: center; min-width: 220px;
     }
     .info-panel { margin-bottom: 5px; font-weight: bold; color: #0ea5e9; }
     
-    /* Etkileşim Paneli */
-    #status { font-size: 20px; font-weight: 900; margin-top: 10px; color: #10b981; transition: 0.2s; }
+    #status { font-size: 22px; font-weight: 900; margin-top: 10px; transition: 0.1s; }
+    #distance-log { font-size: 14px; font-family: monospace; color: #a855f7; margin-top: 5px; }
   </style>
 
   <script>
     // ---------------------------------------------------------
-    // 🔥 YENİ: AĞIZ AÇIKLIĞI SENSÖRÜ (Mouth Tracker)
+    // 🔥 DÜZELTİLMİŞ AĞIZ SENSÖRÜ (Gerçek Dünya Koordinatı + Kalibrasyon)
     // ---------------------------------------------------------
     AFRAME.registerComponent('mouth-tracker', {
+      init: function () {
+        // Hafıza dostu değişkenler
+        this.p1 = new THREE.Vector3();
+        this.p2 = new THREE.Vector3();
+      },
+
       tick: function () {
-        // Üst ve Alt dudak noktalarını (13 ve 14) bul
         const topLip = document.getElementById('point-13');
         const bottomLip = document.getElementById('point-14');
         const statusEl = document.getElementById('status');
+        const distLog = document.getElementById('distance-log');
         
         if (!topLip || !bottomLip || !topLip.object3D.visible) return;
 
-        // İki noktanın 3 boyutlu uzaydaki pozisyonlarını al
-        const p1 = topLip.object3D.position;
-        const p2 = bottomLip.object3D.position;
+        // ÇÖZÜM 1: Yerel pozisyon yerine Gerçek Dünya pozisyonunu okuyoruz (Hata vermez)
+        topLip.object3D.getWorldPosition(this.p1);
+        bottomLip.object3D.getWorldPosition(this.p2);
 
-        // THREE.js ile aralarındaki mesafeyi ölç (distanceTo)
-        const distance = p1.distanceTo(p2);
+        const distance = this.p1.distanceTo(this.p2);
 
-        // Mesafe 0.025 birimden büyükse ağız açık kabul et (Bu değeri test edip değiştirebilirsin)
-        if (distance > 0.025) {
+        // ÇÖZÜM 2: Ekrana anlık mesafeyi yazdırıyoruz ki eşik değerini bulalım
+        const currentDist = distance.toFixed(4); // Virgülden sonra 4 hane
+        distLog.innerText = `Açıklık Oranı: ${currentDist}`;
+
+        // ÇÖZÜM 3: Eşik değerini daha mantıklı bir seviyeye (0.012) çektik. 
+        // DİKKAT: Eğer hala çalışmazsa veya çok erken çalışırsa, ekranda gördüğün sayıya göre bu 0.012'yi değiştir!
+        if (distance > 0.012) {
             statusEl.innerText = "AĞIZ AÇIK! 🔥";
-            statusEl.style.color = "#ef4444"; // Kırmızı
-            statusEl.style.textShadow = "0 0 10px #ef4444";
+            statusEl.style.color = "#ef4444"; 
+            statusEl.style.textShadow = "0 0 15px #ef4444";
         } else {
             statusEl.innerText = "Ağız Kapalı";
-            statusEl.style.color = "#10b981"; // Yeşil
+            statusEl.style.color = "#10b981"; 
             statusEl.style.textShadow = "none";
         }
       }
     });
 
-    // ÇİZGİ MOTORU (Aynı Stabilite)
+    // ÇİZGİ MOTORU (Sabit Kısım)
     AFRAME.registerComponent('dynamic-line', {
       schema: { id1: {type: 'string'}, id2: {type: 'string'}, color: {default: '#0ea5e9'} },
       init: function () { this.p1 = new THREE.Vector3(); this.p2 = new THREE.Vector3(); },
@@ -78,8 +88,9 @@
 <body>
 
 <div id="ui">
-  <div class="info-panel">MODÜL 3: Mimik Sensörü</div>
+  <div class="info-panel">MODÜL 3: Sensör Kalibrasyonu</div>
   <div id="status">Sensör Bekleniyor...</div>
+  <div id="distance-log">Açıklık Oranı: 0.0000</div>
 </div>
 
 <a-scene 
@@ -105,7 +116,6 @@ const MESH_CONNECTIONS = [
   [10, 33], [10, 263], [33, 152], [263, 152]
 ];
 
-// Ağız sensörü için ekstra dudak iç noktaları
 const SENSOR_POINTS = [13, 14];
 
 function createAnchor(index) {
@@ -117,8 +127,6 @@ function createAnchor(index) {
   
   const sphere = document.createElement("a-sphere");
   sphere.setAttribute("radius", "0.003"); 
-  
-  // 🔥 KARA ŞÖVALYE DÜZELTMESİ: Işık gerektirmeyen (shader: flat) materyal eklendi.
   sphere.setAttribute("material", "color: #ffffff; shader: flat; transparent: true; opacity: 0.8");
   
   entity.appendChild(sphere);
@@ -134,10 +142,7 @@ function createLine(id1, id2) {
 }
 
 const initAR = () => {
-    // Mimik sensörü için gerekli kilit noktaları önceden yarat
     SENSOR_POINTS.forEach(idx => createAnchor(idx));
-
-    // Çizgileri ör
     MESH_CONNECTIONS.forEach(pair => {
       const idA = createAnchor(pair[0]);
       const idB = createAnchor(pair[1]);
