@@ -20,7 +20,6 @@
             margin: 0;
             padding: 0;
             background-color: var(--dark-navy);
-            /* Arka plan derinlik efekti */
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(14, 165, 233, 0.1), transparent 30%),
                 radial-gradient(circle at 90% 80%, rgba(255, 0, 127, 0.1), transparent 30%);
@@ -32,29 +31,43 @@
         /* Üst Menü / Kurumsal Header */
         header {
             text-align: center;
-            padding: 50px 20px;
+            padding: 40px 20px 30px; /* Boşluklar mobilde daha şık dursun diye daraltıldı */
             background: rgba(0, 0, 0, 0.2);
             border-bottom: 2px solid rgba(255, 255, 255, 0.05);
         }
 
+        /* 🔥 LOGO DÜZELTMESİ: Mobilde %25'i geçmez, PC'de 140px'i geçmez */
         .logo {
-            max-width: 180px; /* Küçükçekmece Logo Boyutu */
+            width: 25vw; 
+            max-width: 140px; 
             height: auto;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
         }
 
+        /* KÜÇÜKÇEKMECE BELEDİYESİ */
+        .pre-title {
+            font-family: 'Righteous', cursive;
+            font-size: 1.4rem;
+            color: var(--primary-blue);
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        /* GENÇLİK MERKEZİ */
         h1 {
             font-family: 'Righteous', cursive;
-            font-size: 2.5rem;
+            font-size: 2.4rem;
             margin: 0;
             text-transform: uppercase;
             letter-spacing: 2px;
-            background: linear-gradient(to right, #fff, var(--primary-blue));
+            background: linear-gradient(to right, #fff, var(--primary-pink));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
+        /* Artırılmış Gerçeklik Deneyim Laboratuvarı */
         .subtitle {
             font-size: 1.1rem;
             color: #94a3b8;
@@ -164,10 +177,17 @@
 
         footer {
             text-align: center;
-            padding: 60px;
+            padding: 40px;
             color: #64748b;
             font-weight: 700;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+        
+        /* Ekran çok küçülürse yazıları biraz daha uyumlu hale getir */
+        @media (max-width: 480px) {
+            h1 { font-size: 2rem; }
+            .pre-title { font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -175,8 +195,9 @@
 
     <header>
         <img src="kucukcekmece_logo.png" alt="Küçükçekmece Belediyesi" class="logo">
-        <h1>BİLİŞİM SINIFI AR STUDIO</h1>
-        <div class="subtitle">Gençlik Merkezi Artırılmış Gerçeklik Deneyim Laboratuvarı</div>
+        <div class="pre-title">KÜÇÜKÇEKMECE BELEDİYESİ</div>
+        <h1>GENÇLİK MERKEZİ</h1>
+        <div class="subtitle">Artırılmış Gerçeklik Deneyim Laboratuvarı</div>
     </header>
 
     <div class="container">
