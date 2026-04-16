@@ -3,57 +3,68 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Face Tracking v4.2 | Full Çekirdek + Ağız Sensörü</title>
+  <title>Face Tracking v4.3 | Kusursuz Mimik (Oran Sistemi)</title>
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
 
   <style>
-    /* 🔥 KAMERA DÜZELTMESİ (Asla Siyah Ekran Olmaz) */
     html, body { width: 100vw; height: 100vh; margin: 0; padding: 0; overflow: hidden; background: transparent; }
-    
-    #ar-container {
-      overflow: hidden; position: absolute; width: 100vw; height: 100vh; top: 0; left: 0; z-index: 1;
-    }
+    #ar-container { overflow: hidden; position: absolute; width: 100vw; height: 100vh; top: 0; left: 0; z-index: 1; }
 
     #ui {
       position: absolute; top: 10px; left: 10px; color: #fff;
       background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      z-index: 999; box-shadow: 0 4px 15px rgba(0,255,255,0.3);
-      border: 1px solid #0ea5e9; text-align: center; min-width: 220px;
+      font-family: 'Segoe UI', sans-serif; z-index: 999; 
+      box-shadow: 0 4px 15px rgba(0,255,255,0.3); border: 1px solid #0ea5e9;
+      text-align: center; min-width: 220px;
     }
     .info-panel { margin-bottom: 5px; font-weight: bold; color: #0ea5e9; }
     
-    /* Etkileşim Paneli */
     #status { font-size: 22px; font-weight: 900; margin-top: 10px; transition: 0.1s; }
     #distance-log { font-size: 14px; font-family: monospace; color: #a855f7; margin-top: 5px; }
   </style>
 
   <script>
     // ---------------------------------------------------------
-    // 🔥 MODÜL 3: AĞIZ AÇIKLIĞI SENSÖRÜ
+    // 🔥 YENİ: BAĞIL ORAN SENSÖRÜ (Kamera mesafesinden etkilenmez!)
     // ---------------------------------------------------------
     AFRAME.registerComponent('mouth-tracker', {
       init: function () {
-        this.p1 = new THREE.Vector3(); this.p2 = new THREE.Vector3();
+        this.pTopLip = new THREE.Vector3(); 
+        this.pBotLip = new THREE.Vector3();
+        this.pLeftEye = new THREE.Vector3(); 
+        this.pRightEye = new THREE.Vector3();
       },
       tick: function () {
         const topLip = document.getElementById('point-13');
         const bottomLip = document.getElementById('point-14');
+        const leftEye = document.getElementById('point-33');   // Yüzün sol sınırı
+        const rightEye = document.getElementById('point-263'); // Yüzün sağ sınırı
+        
         const statusEl = document.getElementById('status');
         const distLog = document.getElementById('distance-log');
         
-        if (!topLip || !bottomLip || !topLip.object3D.visible) return;
+        if (!topLip || !bottomLip || !leftEye || !rightEye || !topLip.object3D.visible) return;
 
-        topLip.object3D.getWorldPosition(this.p1);
-        bottomLip.object3D.getWorldPosition(this.p2);
+        // 4 noktanın gerçek dünya pozisyonunu al
+        topLip.object3D.getWorldPosition(this.pTopLip);
+        bottomLip.object3D.getWorldPosition(this.pBotLip);
+        leftEye.object3D.getWorldPosition(this.pLeftEye);
+        rightEye.object3D.getWorldPosition(this.pRightEye);
 
-        const distance = this.p1.distanceTo(this.p2);
-        distLog.innerText = `Açıklık Oranı: ${distance.toFixed(4)}`;
+        // 1. Dudakların arasındaki mesafeyi ölç
+        const mouthDistance = this.pTopLip.distanceTo(this.pBotLip);
+        // 2. Yüzün genişliğini ölç
+        const faceWidth = this.pLeftEye.distanceTo(this.pRightEye);
 
-        // Eğer ağzınla test ederken bu değer çok düşük/yüksek kalırsa burayı (0.015) değiştir!
-        if (distance > 0.015) {
+        // 3. MATEMATİKSEL ORAN (Kameraya uzaklık artık önemsiz)
+        const ratio = mouthDistance / faceWidth;
+        
+        distLog.innerText = `Ağız/Yüz Oranı: ${ratio.toFixed(3)}`;
+
+        // Ağız kapalıyken bu oran genelde 0.02 - 0.05 arasıdır. Açılınca 0.15'in üstüne çıkar.
+        if (ratio > 0.10) { 
             statusEl.innerText = "AĞIZ AÇIK! 🔥";
             statusEl.style.color = "#ef4444"; 
             statusEl.style.textShadow = "0 0 15px #ef4444";
@@ -74,8 +85,7 @@
         const el2 = document.getElementById(this.data.id2);
         if (!el1 || !el2 || !el1.object3D.visible) { this.el.setAttribute('visible', false); return; }
         this.el.setAttribute('visible', true);
-        el1.object3D.getWorldPosition(this.p1);
-        el2.object3D.getWorldPosition(this.p2);
+        el1.object3D.getWorldPosition(this.p1); el2.object3D.getWorldPosition(this.p2);
         const startStr = `${this.p1.x.toFixed(4)} ${this.p1.y.toFixed(4)} ${this.p1.z.toFixed(4)}`;
         const endStr = `${this.p2.x.toFixed(4)} ${this.p2.y.toFixed(4)} ${this.p2.z.toFixed(4)}`;
         this.el.setAttribute('line', `start: ${startStr}; end: ${endStr}; color: ${this.data.color}`);
@@ -91,8 +101,7 @@
         this.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(9), 3));
         this.material = new THREE.MeshBasicMaterial({ color: new THREE.Color(this.data.color), transparent: true, opacity: this.data.opacity, side: THREE.DoubleSide, depthTest: false, depthWrite: false });
         this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.mesh.frustumCulled = false;
-        this.el.setObject3D('mesh', this.mesh);
+        this.mesh.frustumCulled = false; this.el.setObject3D('mesh', this.mesh);
       },
       tick: function () {
         const el1 = document.getElementById(this.data.id1); const el2 = document.getElementById(this.data.id2); const el3 = document.getElementById(this.data.id3);
@@ -110,9 +119,9 @@
 <body>
 
 <div id="ui">
-  <div class="info-panel">MODÜL 1, 2 & 3 Aktif</div>
+  <div class="info-panel">MODÜL 3: Zeki Sensör (Oran)</div>
   <div id="status">Sensör Bekleniyor...</div>
-  <div id="distance-log">Açıklık Oranı: 0.0000</div>
+  <div id="distance-log">Ağız/Yüz Oranı: 0.000</div>
 </div>
 
 <div id="ar-container">
@@ -148,8 +157,8 @@ const MAKEUP_SURFACES = [
   [61, 37, 267, "#FFD700", 0.8], [291, 267, 37, "#FFD700", 0.8] 
 ];
 
-// Sensör noktaları
-const SENSOR_POINTS = [13, 14];
+// Sensör için gerekli tüm referans noktaları (Dudaklar ve Göz dış kenarları)
+const SENSOR_POINTS = [13, 14, 33, 263];
 
 function createAnchor(index) {
   if (currentAnchors[index]) return currentAnchors[index].id; 
@@ -181,6 +190,7 @@ function createTriangle(id1, id2, id3, color, opacity) {
 }
 
 const initAR = () => {
+    // Sensör için gerekli noktaları önceden yükle
     SENSOR_POINTS.forEach(idx => createAnchor(idx));
 
     MESH_CONNECTIONS.forEach(pair => {
