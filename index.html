@@ -1,1 +1,154 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Tracking v2.2.1 | Sabit Çizgi Çözümü</title>
 
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-face-aframe.prod.js"></script>
+
+  <style>
+    body { margin:0; overflow:hidden; background:#000; }
+    #ui {
+      position:absolute; top:10px; left:10px; color:#fff;
+      background:rgba(0,0,0,0.8); padding:15px; border-radius:10px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      z-index:999; box-shadow: 0 4px 15px rgba(0,255,255,0.3);
+      border: 1px solid #0ea5e9;
+    }
+    .info-panel { margin-bottom: 5px; font-weight: bold; color: #0ea5e9; }
+    #info { color: #fff; font-size: 13px; margin-top: 5px; }
+  </style>
+
+  <script>
+    // 🔥 SORUNSUZ ÇİZGİ MOTORU (v2)
+    AFRAME.registerComponent('dynamic-line', {
+      schema: {
+        id1: {type: 'string'},
+        id2: {type: 'string'},
+        color: {default: '#0ea5e9'}
+      },
+      
+      init: function () {
+        this.p1 = new THREE.Vector3();
+        this.p2 = new THREE.Vector3();
+      },
+
+      tick: function () {
+        const el1 = document.getElementById(this.data.id1);
+        const el2 = document.getElementById(this.data.id2);
+        
+        if (!el1 || !el2 || !el1.object3D || !el2.object3D) return;
+
+        if (!el1.object3D.visible) {
+            this.el.setAttribute('visible', false);
+            return;
+        } else {
+            this.el.setAttribute('visible', true);
+        }
+
+        // 🛠 ÇÖZÜM 1: Objelerin dünya matrisini ZORLA güncelle (Eksen kaymasını engeller)
+        el1.object3D.updateMatrixWorld(true);
+        el2.object3D.updateMatrixWorld(true);
+
+        // Gerçek dünya koordinatlarını p1 ve p2'ye yaz
+        el1.object3D.getWorldPosition(this.p1);
+        el2.object3D.getWorldPosition(this.p2);
+
+        // 🛠 ÇÖZÜM 2: Caching hatasını önlemek için veriyi string olarak bas.
+        // toFixed(4) mikro titremeleri önler ve render motorunu rahatlatır.
+        const startStr = `${this.p1.x.toFixed(4)} ${this.p1.y.toFixed(4)} ${this.p1.z.toFixed(4)}`;
+        const endStr = `${this.p2.x.toFixed(4)} ${this.p2.y.toFixed(4)} ${this.p2.z.toFixed(4)}`;
+
+        this.el.setAttribute('line', `start: ${startStr}; end: ${endStr}; color: ${this.data.color}`);
+      }
+    });
+  </script>
+</head>
+
+<body>
+
+<div id="ui">
+  <div class="info-panel">MODÜL 1: Tel Kafes (Bug Fix)</div>
+  <div id="info">Mesh Yükleniyor...</div>
+</div>
+
+<a-scene 
+  id="main-scene"
+  mindar-face="autoStart: true; mirror: false;"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+>
+  <a-camera active="false" position="0 0 0" look-controls="enabled: false"></a-camera>
+</a-scene>
+
+<script>
+const sceneEl = document.querySelector("#main-scene");
+const info = document.getElementById("info");
+let currentAnchors = {}; 
+
+const MESH_CONNECTIONS = [
+  // Gözler
+  [33, 160], [160, 158], [158, 133], [133, 153], [153, 144], [144, 33],
+  [362, 385], [385, 387], [387, 263], [263, 373], [373, 380], [380, 362],
+  // Burun
+  [10, 151], [151, 9], [9, 8], [8, 168], [168, 6], [6, 197], [197, 195], [195, 5], [5, 4], [4, 1],
+  // Dudak
+  [61, 185], [185, 40], [40, 39], [39, 37], [37, 0], [0, 267], [267, 269], [269, 270], [270, 409], [409, 291], 
+  [291, 375], [375, 321], [321, 405], [405, 314], [314, 17], [17, 84], [84, 181], [181, 91], [91, 146], [146, 61],
+  // Yüz Bağlantıları
+  [33, 152], [263, 152], 
+  [133, 168], [362, 168], 
+  [61, 152], [291, 152], 
+  [4, 61], [4, 291], 
+  [10, 33], [10, 263] 
+];
+
+function createAnchor(index) {
+  if (currentAnchors[index]) return currentAnchors[index].id; 
+
+  const id = `point-${index}`;
+  const entity = document.createElement("a-entity");
+  entity.setAttribute("id", id);
+  entity.setAttribute("mindar-face-target", `anchorIndex: ${index}`);
+
+  const sphere = document.createElement("a-sphere");
+  sphere.setAttribute("radius", "0.006"); 
+  sphere.setAttribute("color", "#ffffff");
+  sphere.setAttribute("opacity", "0.9");
+  
+  entity.appendChild(sphere);
+  sceneEl.appendChild(entity);
+
+  currentAnchors[index] = { id: id, entity: entity }; 
+  return id;
+}
+
+function createLine(id1, id2) {
+  const lineEntity = document.createElement("a-entity");
+  lineEntity.setAttribute("dynamic-line", `id1: ${id1}; id2: ${id2}; color: #00FFFF`);
+  sceneEl.appendChild(lineEntity);
+}
+
+const initMesh = () => {
+    let lineCount = 0;
+    MESH_CONNECTIONS.forEach(pair => {
+      const idA = createAnchor(pair[0]);
+      const idB = createAnchor(pair[1]);
+      createLine(idA, idB);
+      lineCount++;
+    });
+    info.textContent = `Ağ Bağlantısı: ${lineCount} | Sorunsuz Çalışıyor!`;
+};
+
+if (sceneEl.hasLoaded) {
+    initMesh();
+} else {
+    sceneEl.addEventListener('loaded', initMesh);
+}
+</script>
+
+</body>
+</html>
