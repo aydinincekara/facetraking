@@ -32,12 +32,12 @@
         /* Üst Menü / Kurumsal Header */
         header {
             text-align: center;
-            padding: 40px 20px 30px; /* Boşluklar mobilde daha şık dursun diye daraltıldı */
+            padding: 40px 20px 30px; 
             background: rgba(0, 0, 0, 0.2);
             border-bottom: 2px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* 🔥 LOGO DÜZELTMESİ: Mobilde %25'i geçmez, PC'de 140px'i geçmez */
+        /* LOGO DÜZELTMESİ */
         .logo {
             width: 25vw; 
             max-width: 140px; 
@@ -46,42 +46,26 @@
             filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
         }
 
-        /* Üst başlık hiyerarşisi */
-        .header-hierarchy {
-            font-family: 'Righteous', cursive;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        /* 🔥 YENİ ANA BAŞLIK: KÜÇÜKÇEKMECE BELEDİYESİ */
+        /* ANA BAŞLIK: KÜÇÜKÇEKMECE BELEDİYESİ */
         h1 {
             font-family: 'Righteous', cursive;
-            font-size: 2.8rem; /* Daha prestijli boyut */
-            margin: 0 0 10px 0;
+            font-size: 2.8rem; 
+            margin: 0 0 5px 0;
             text-transform: uppercase;
             letter-spacing: 2px;
-            /* Efsanevi renk geçişi */
             background: linear-gradient(to right, #fff, var(--primary-blue), #fff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
         }
 
-        /* GENÇLİK MERKEZİ */
-        .youth-center-title {
-            font-size: 1.5rem;
-            color: var(--primary-pink);
-            letter-spacing: 4px;
-            margin-bottom: 8px;
-            font-weight: 900;
-        }
-
-        /* Artırılmış Gerçeklik Deneyim Laboratuvarı */
+        /* 🔥 YENİ DÜZENLEME: Tek satır, kurumsal gri alt başlık */
         .subtitle {
-            font-size: 1.1rem;
-            color: #94a3b8;
-            margin-top: 10px;
+            font-size: 1.2rem;
+            color: #cbd5e1; /* Kurumsal, okunabilir açık gri */
+            margin-top: 5px;
             font-weight: 700;
+            letter-spacing: 1px;
         }
 
         /* Proje Kartları Alanı */
@@ -196,13 +180,11 @@
         /* Ekran Boyutuna Göre Ayarlamalar (Responsive) */
         @media (max-width: 768px) {
             h1 { font-size: 2rem; }
-            .youth-center-title { font-size: 1.2rem; }
         }
 
         @media (max-width: 480px) {
             h1 { font-size: 1.6rem; }
-            .youth-center-title { font-size: 1rem; letter-spacing: 2px; }
-            .subtitle { font-size: 1rem; }
+            .subtitle { font-size: 1rem; letter-spacing: 0.5px; }
         }
     </style>
 </head>
@@ -212,9 +194,7 @@
         <img src="kucukcekmece_logo.png" alt="Küçükçekmece Belediyesi" class="logo">
         
         <h1>KÜÇÜKÇEKMECE BELEDİYESİ</h1>
-        
-        <div class="header-hierarchy youth-center-title">GENÇLİK MERKEZİ</div>
-        <div class="subtitle">Artırılmış Gerçeklik Deneyim Laboratuvarı</div>
+        <div class="subtitle">Gençlik Merkezi Artırılmış Gerçeklik Deneyim Laboratuvarı</div>
     </header>
 
     <div class="container">
